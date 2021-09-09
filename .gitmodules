@@ -1,0 +1,3 @@
+[submodule "src/nkf"]
+	path = src/nkf
+	url = https://github.com/kirin123kirin/nkf.git
