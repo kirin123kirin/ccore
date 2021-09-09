@@ -935,7 +935,7 @@ class Kansuji {
                 break;
         }
         std::reverse(buffer, ret);
-        return (size_type)(ret - buffer - 1);
+        return (size_type)(ret - buffer);
     }
 
    public:
@@ -950,13 +950,13 @@ class Kansuji {
     static PyObject* kanji2int(PyObject* u) {
         Py_ssize_t len;
 
-        // data_type wdat = PyUnicode_AsWideCharString(u, &len);
-        data_type wdat = (data_type)PyUnicode_AS_DATA(u);
-        if((len = PyObject_Length(u)) == (Py_ssize_t)-1)
+        data_type wdat = PyUnicode_AsWideCharString(u, &len);
+        if(wdat == NULL)
             return NULL;
 
         Kansuji ks(wdat, (size_type)len);
         auto retlen = ks.ktoi();
+        PyMem_Free(wdat);
         return PyUnicode_FromWideChar(ks.data_, retlen);
     }
     static data_type int2kanji(const uint64_t i) {
@@ -976,8 +976,7 @@ class Kansuji {
         auto len = (Py_ssize_t)ks.itok(i, buffer);
         if(len == Py_ssize_t())
             return NULL;
-        // return PyUnicode_FromWideChar(buffer, len);
-        return PyUnicode_FromKindAndData(2, buffer, len);
+        return PyUnicode_FromWideChar(buffer, len);
     }
 
    public:
@@ -1023,7 +1022,7 @@ const std::unordered_map<Kansuji::value_type, Kansuji::value_type, Kansuji::no_h
 
 const std::array<Kansuji::value_type, 10> Kansuji::D1_KURAI = {L""[0], L'一', L'二', L'三', L'四',
                                                                L'五',  L'六', L'七', L'八', L'九'};
-const std::array<Kansuji::value_type, 3> Kansuji::D3_KURAI = {L'千', L'百', L'十'};
+const std::array<Kansuji::value_type, 3> Kansuji::D3_KURAI = {L'十', L'百', L'千'};
 const std::array<const Kansuji::value_type*, 18> Kansuji::D4_KURAI = {
     L"",   L"万", L"億", L"兆", L"京",     L"垓",     L"予",     L"穣",       L"溝",
     L"潤", L"正", L"載", L"極", L"恒河沙", L"阿僧祇", L"那由他", L"不可思議", L"無量大数"};
@@ -2580,8 +2579,8 @@ PyObject* extractdate(const std::wstring& str, const bool dayfirst = false, cons
                 if(c > minlimit) {
                     if((dt = parse_datetime(str.substr(beg, last - beg), dayfirst)) != nullptr) {
                         auto en = last - beg;
-                        auto substr = str.substr(beg, en).data();
-                        PyObject* u = PyUnicode_FromKindAndData(2, substr, (Py_ssize_t)(substr[en] ? en : en - 1));
+                        auto substr = str.substr(beg, en);
+                        PyObject* u = PyUnicode_FromWideChar(substr.data(), (Py_ssize_t)substr.size());
                         if(u) {
                             PyList_Append(ret, u);
                             Py_DECREF(u);
@@ -2738,17 +2737,22 @@ extern "C" PyObject* to_hankaku_py(PyObject* self, PyObject* args) {
     if(!PyArg_ParseTuple(args, "O", &str))
         return NULL;
 
-    std::size_t len = (std::size_t)PyObject_Length(str);
-    if(len == (std::size_t)-1 || !PyUnicode_Check(str) || PyUnicode_READY(str) == -1)
+    if(!PyUnicode_Check(str) || PyUnicode_READY(str) == -1)
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
 
     unsigned int kind = PyUnicode_KIND(str);
+    Py_ssize_t len;
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);
+    if(wdat == NULL)
+        return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0 || kind == 1)
         return str;
+    auto&& res = to_hankaku(wdat, (std::size_t)len);
+    PyMem_Free(wdat);
 
-    auto&& res = to_hankaku((wchar_t*)PyUnicode_DATA(str), len);
+
     if(!res.empty())
-        return PyUnicode_FromKindAndData(2, res.data(), (Py_ssize_t)res.size());
+        return PyUnicode_FromWideChar(res.data(), (Py_ssize_t)res.size());
     return PyErr_Format(PyExc_RuntimeError, "Unknown converting error");
 }
 
@@ -2758,16 +2762,21 @@ extern "C" PyObject* to_zenkaku_py(PyObject* self, PyObject* args) {
     if(!PyArg_ParseTuple(args, "O", &str))
         return NULL;
 
-    std::size_t len = (std::size_t)PyObject_Length(str);
-    if(len == (std::size_t)-1 || !PyUnicode_Check(str) || PyUnicode_READY(str) == -1)
+    if(!PyUnicode_Check(str) || PyUnicode_READY(str) == -1)
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
 
+    Py_ssize_t len;
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);
+    if(wdat == NULL)
+        return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0)
         return str;
 
-    auto&& res = to_zenkaku((wchar_t*)PyUnicode_DATA(str), len);
+    auto&& res = to_zenkaku(wdat, (std::size_t)len);
+    PyMem_Free(wdat);
+
     if(!res.empty())
-        return PyUnicode_FromKindAndData(2, res.data(), (Py_ssize_t)res.size());
+        return PyUnicode_FromWideChar(res.data(), (Py_ssize_t)res.size());
     return PyErr_Format(PyExc_RuntimeError, "Unknown converting error");
 }
 
@@ -2944,7 +2953,7 @@ extern "C" PyObject* is_csv_py(PyObject* self, PyObject* args) {
 
 extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kwargs) {
     PyObject* o;
-    const wchar_t* str;
+    wchar_t* str;
     datetime res;
 
     int dayfirst = false;
@@ -2958,10 +2967,12 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
         return o;
     else if (!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    if((str = (wchar_t*)PyUnicode_AS_DATA(o)) == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
-
+    
     res = to_datetime(str, (bool)dayfirst, minlimit);
+    PyMem_Free(str);
     
     if(res == nullptr)
         Py_RETURN_NONE;
@@ -2986,8 +2997,8 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
 }
 
 extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kwargs) {
-    PyObject* o;
-    const wchar_t* str;
+    PyObject* o, *res;
+    wchar_t* str;
 
     int dayfirst = false;
     uint64_t minlimit = uint64_t(3);
@@ -2998,16 +3009,22 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
 
     if (!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    if((str = (wchar_t*)PyUnicode_AS_DATA(o)) == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
     
-    return extractdate(str, (bool)dayfirst, minlimit);
+    res = extractdate(str, (bool)dayfirst, minlimit);
+    PyMem_Free(str);
+    if (res)
+        return res;
+    else
+        Py_RETURN_NONE;
 }
 
 extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyObject* kwargs) {
     PyObject* o;
-    const wchar_t* str;
-    const wchar_t* fmt;
+    wchar_t* str = NULL;
+    wchar_t* fmt = NULL;
     std::wstring res;
 
     PyObject* format = NULL;
@@ -3020,21 +3037,24 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
 
     if (!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    if((str = (wchar_t*)PyUnicode_AS_DATA(o)) == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     if(format) {
         if(!PyUnicode_Check(format))
             return PyErr_Format(PyExc_ValueError, "Need strftime formating unicode string.");
-        if((fmt = (wchar_t*)PyUnicode_AS_DATA(format)) == NULL)
+        if((fmt = PyUnicode_AsWideCharString(format, &len)) == NULL)
             return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
-    } else {
-        fmt = L"%Y/%m/%d %H:%M:%S";
     }
 
-    res = normalized_datetime(str, fmt, (bool)dayfirst, minlimit);
+    res = normalized_datetime(str, fmt ? fmt : L"%Y/%m/%d %H:%M:%S", (bool)dayfirst, minlimit);
+    PyMem_Free(str);
+    if (fmt)
+        PyMem_Free(fmt);
+
     if(!res.empty())
-        return PyUnicode_FromKindAndData(2, res.data(), (Py_ssize_t)(res.size() - 1));
+        return PyUnicode_FromWideChar(res.data(), (Py_ssize_t)(res.size() - 1));
     else
         Py_RETURN_NONE;
 }

@@ -71,7 +71,7 @@ def test_kanji2int():
 
 
 def test_int2kanji():
-    assert(int2kanji(123456789) == "一億二十三百四千五万六十七百八千")
+    assert(int2kanji(123456789) == "一億二千三百四十五万六千七百八十九")
     runtimeit('int2kanji(123456789)')
 
 
@@ -238,8 +238,8 @@ def test_to_datetime():
     assert(normalized_datetime(test) == ans)
 
     runtimeit('to_datetime("平成13年08月24日PM 08:10")')
-    runtimeit('extractdate("hogegefooほげ平成13年08月24日PM 08:10むう")')
     runtimeit('normalized_datetime("hogegefooほげ平成13年08月24日PM 08:10むう")')
+    runtimeit('extractdate("hogegefooほげ平成13年08月24日PM 08:10むう")')
 
 def _test_expect_ValueError(val):
     try:
