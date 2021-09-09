@@ -1,0 +1,237 @@
+{
+  // Variable Example
+  // ${workspaceFolder}	/home/your-username/your-project
+  // ${workspaceFolderBasename}	your-project
+  // ${file}	/home/your-username/your-project/folder/file.ext
+  // ${relativeFile}	folder/file.ext
+  // ${relativeFileDirname}	folder
+  // ${fileBasename}	file.ext
+  // ${fileBasenameNoExtension}	file
+  // ${fileDirname}	/home/your-username/your-project/folder
+  // ${fileExtname}	.ext
+  // ${lineNumber}	VSCodeの編集画面で現在選択されている行番号
+  // ${selectedText}	VSCodeの編集画面で現在選択されているテキスト
+  // ${execPath}	実行中のVS Code実行可能ファイル「code.exe」のアドレス
+  // ${env:xxxxxx} 環境変数
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cppbuild",
+      "label": "prebuild",
+      "command": "mkdir",
+      "args": [
+        "build\\Debug",
+        ">nul",
+        "2>&1",
+        "&",
+        "echo",
+        ">nul"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "never",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+    },
+    {
+      "type": "process",
+      "label": "ReleaseSetup.py",
+      "command": "${env:PYTHONPATH}\\python.exe",
+      "args": [
+        "setup.py",
+        "build",
+        "-f"
+      ],
+      "group": //"build",
+      {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+    },
+    {
+      "type": "process",
+      "label": "DebugSetup.py",
+      "command": "${env:PYTHONPATH}\\python.exe",
+      "args": [
+        "setup.py",
+        "build",
+        "-gf"
+      ],
+      "group": //"build",
+      {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+    },
+    {
+      "type": "cppbuild",
+      "label": "Debug C++",
+      "command": "cmd.exe",
+      "args": [
+        "/C",
+        "chcp",
+        "65001",
+        ">nul",
+        "&&",
+        // https://docs.microsoft.com/ja-jp/cpp/build/reference/compiler-options-listed-alphabetically?view=msvc-160
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\bin\\HostX86\\x64\\cl.exe",
+        "/DDBUG",
+        // "/c", //リンクを行わないでコンパイルします。
+        "/source-charset:utf-8",
+        "/std:c++14",
+        "/Wall",
+        "/errorReport:prompt", // すぐにエラーメッセージを表示する
+        "/wd 4514",
+        "/wd 4820",
+        "/wd 5027",
+        "/wd 5045",
+        "/wd 4100",
+        "/wd 4191",
+        "/wd 4710",
+        "/wd 4668",
+        "/wd 4623",
+        "/wd 4625",
+        "/wd 4626",
+        "/wd 4668",
+        "/wd 4201",
+        // "/sdl",
+        "-IC:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\ATLMFC\\include",
+        "-IC:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\include",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\ucrt",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\shared",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\um",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\winrt",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\cppwinrt",
+        "/I${env:PYTHONPATH}\\include",
+        "/I${env:PYTHONPATH}\\libs",
+        "/IY:\\usr\\local\\include",
+        "/IC:\\usr\\lib\\boost",
+        "/Zi",
+        "/EHsc",
+        "/Od",
+        "/nologo",
+        "/Fe:",
+        "${workspaceFolder}\\build\\${fileBasenameNoExtension}.exe",
+        "${file}",
+        "/link",
+        // "/LIBPATH:${workspaceFolder}\\build",
+        // "/LIBPATH:${workspaceFolder}\\build\\Debug\\src",
+        "/LIBPATH:${env:PYTHONPATH}\\libs",
+        "/LIBPATH:${env:PYTHONPATH}\\PCbuild\\amd64",
+        "/LIBPATH:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\ATLMFC\\lib\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\lib\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\ucrt\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\um\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.18362.0\\x64",
+        "/LIBPATH:C:\\usr\\lib\boost\\lib64-msvc-14.2",
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}\\build"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "prebuild"
+      ],
+      "group": "build",
+      "detail": "cl.exe"
+    },
+    {
+      "type": "cppbuild",
+      "label": "Release C++",
+      "command": "cmd.exe",
+      "args": [
+        "/C",
+        "chcp",
+        "65001",
+        ">nul",
+        "&&",
+        // https://docs.microsoft.com/ja-jp/cpp/build/reference/compiler-options-listed-alphabetically?view=msvc-160
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\bin\\HostX86\\x64\\cl.exe",
+        // "/c", //リンクを行わないでコンパイルします。
+        "/source-charset:utf-8",
+        "/std:c++14",
+        // "/Wall",
+        // "/wd","4514", "/wd 4820", "/wd 5045", "/wd 4100", "/wd 4191","/wd 4710", "/wd 4668",
+        "-IC:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\ATLMFC\\include",
+        "-IC:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\include",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\ucrt",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\shared",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\um",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\winrt",
+        "-IC:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\cppwinrt",
+        "/I${env:PYTHONPATH}\\include",
+        "/I${env:PYTHONPATH}\\libs",
+        "/IY:\\usr\\local\\include",
+        "/IC:\\usr\\lib\\boost",
+        "/Zi",
+        "/EHsc",
+        "/Ox",
+        "/nologo",
+        "/Fe:",
+        "${workspaceFolder}\\build\\${fileBasenameNoExtension}.exe",
+        "${file}",
+        "/link",
+        // "/LIBPATH:${workspaceFolder}\\build",
+        // "/LIBPATH:${workspaceFolder}\\build\\Debug\\src",
+        "/LIBPATH:${env:PYTHONPATH}\\libs",
+        "/LIBPATH:${env:PYTHONPATH}\\PCbuild\\amd64",
+        "/LIBPATH:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\ATLMFC\\lib\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\lib\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\ucrt\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\um\\x64",
+        "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.18362.0\\x64"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}\\build"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "prebuild"
+      ],
+      "group": "build",
+      "detail": "cl.exe"
+    }
+  ]
+}

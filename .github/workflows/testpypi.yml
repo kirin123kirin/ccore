@@ -1,0 +1,142 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: upload test.pypi.org
+
+on:
+      workflow_dispatch
+#  release:
+#    types: [push]
+
+jobs:
+   build_python:
+      runs-on: ${{ matrix.platform }}
+      strategy:
+         max-parallel: 15
+         matrix:
+            platform: [
+                  windows-latest,
+                  ubuntu-latest,
+                  macos-latest
+            ]
+            python-version: [
+                  2.7,
+                  3.6,
+                  3.7,
+                  3.8,
+                  3.9,
+            ]
+            exclude:
+               -
+                  platform:       windows-latest
+                  python-version: 2.7
+               -
+                  platform:       macos-latest
+                  python-version: 2.7
+
+      steps:
+         -
+            uses: actions/checkout@v2
+         -
+            name: Setup Python ${{ matrix.python-version }}
+            uses: actions/setup-python@v2
+            with:
+               python-version: ${{ matrix.python-version }}
+
+         -
+            name:  Install and Build
+            shell: bash
+            run:   |
+                   python -m pip install -U pip
+                   pip install setuptools wheel pytest flake8 twine psutil
+         -
+            name:  Test and Build for 2.7
+            shell: bash
+            if:    ${{ matrix.python-version == '2.7' }}
+            run:   |
+                   pip install -e .
+                   python test/test_ccore.py
+                   python setup.py bdist_wheel
+                   twine check dist/*
+         -
+            name:  Test and Build for >= 3.6
+            shell: bash
+            if:    ${{ matrix.python-version != '2.7' }}
+            run:   |
+                   flake8
+                   python setup.py test
+                   python setup.py bdist_wheel
+                   twine check --strict dist/*
+         -
+            name:  Build tar.gz
+            shell: bash
+            if:    ${{ matrix.python-version == '3.9' && matrix.platform == 'ubuntu-latest' }}
+            run:   |
+                   python setup.py sdist
+                   twine check --strict dist/*
+         -
+            name: Save whl file to artifact
+            uses: actions/upload-artifact@v2
+            with:
+               name:           dist
+               path:           dist
+               retention-days: 1
+
+   build_arm64_python:
+      runs-on: ubuntu-20.04
+      name:    Build on ubuntu-20.04 aarch64
+      strategy:
+         max-parallel: 5
+         matrix:
+            python-version: [ 
+                  python27,
+                  python36,
+                  python37,
+                  python38,
+                  python39,
+            ]
+      steps:
+         -
+            uses: actions/checkout@v2.1.0
+         -
+            uses: kirin123kirin/run-on-arch-action@master
+            name: Run commands
+            id:   runcmd
+            with:
+               arch:        aarch64
+               distro:      ${{ matrix.python-version }}
+               githubToken: ${{ github.token }}
+               run:         |
+                            pip install twine psutil gnureadline
+                            pip uninstall -y readline
+                            pip install -e .
+                            python test/test_ccore.py
+                            python setup.py bdist_wheel
+                            twine check dist/*
+         -
+            name: Save whl file to artifact
+            uses: actions/upload-artifact@v2
+            with:
+               name:           dist
+               path:           dist
+               retention-days: 1
+
+   publish:
+      needs: [ build_python, build_arm64_python ]
+      runs-on: ubuntu-latest
+      steps:
+         -
+            name: download dist from artifact
+            uses: actions/download-artifact@v2
+            with:
+               name: dist
+         -
+            name:  Publish PyPI
+            shell: bash
+            env:
+               TEST_PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
+               TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+            run:   |
+                   pip install twine
+                   twine upload --verbose --skip-existing -u "$TEST_PYPI_USERNAME" -p "$TEST_PYPI_PASSWORD" --repository-url https://test.pypi.org/legacy/ ./*
+
