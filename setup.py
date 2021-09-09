@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from distutils import ccompiler
 import re
 
 from setuptools import Extension, setup
@@ -109,7 +108,7 @@ setup(name="ccore",
       author='kirin123kirin',
       ext_modules=ext_modules,
       keywords=["flatten", "to_datetime"],
-      license="GPL2",
+      license="MIT",
       platforms=["Windows", "Linux", "Mac OS-X"],
       classifiers=CF.strip().splitlines(),
       **tests
