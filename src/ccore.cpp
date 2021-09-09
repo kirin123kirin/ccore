@@ -83,7 +83,6 @@ struct PyMallocator {
         if(n > std::numeric_limits<std::size_t>::max() / sizeof(T))
             throw std::bad_array_new_length();
         if(auto p = PyMem_New(T, n)) {
-            // report(p, n);
             return p;
         }
         throw std::bad_alloc();
@@ -94,26 +93,18 @@ struct PyMallocator {
         ;
     }
 
-    template <class T>
     bool operator==(const PyMallocator<T>&) {
         return true;
     }
 
-    template <class T>
     bool operator!=(const PyMallocator<T>&) {
         return false;
-    }
-
-   private:
-    void report(T* p, std::size_t n, bool alloc = true) const {
-        std::cout << (alloc ? "Alloc: " : "Dealloc: ") << sizeof(T) * n << " bytes at " << std::hex << std::showbase
-                  << reinterpret_cast<void*>(p) << std::dec << '\n';
     }
 };
 
 using py_ustring = std::basic_string<wchar_t, std::char_traits<wchar_t>, PyMallocator<wchar_t>>;
 
-static std::unordered_map<wchar_t, wchar_t*> ZEN2HAN = {
+static std::unordered_map<wchar_t, const wchar_t*> ZEN2HAN = {
     {L'ァ', L"ｧ"},  {L'ア', L"ｱ"},  {L'ィ', L"ｨ"},  {L'イ', L"ｲ"},  {L'ゥ', L"ｩ"},  {L'ウ', L"ｳ"},  {L'ェ', L"ｪ"},
     {L'エ', L"ｴ"},  {L'ォ', L"ｫ"},  {L'オ', L"ｵ"},  {L'カ', L"ｶ"},  {L'ガ', L"ｶﾞ"}, {L'キ', L"ｷ"},  {L'ギ', L"ｷﾞ"},
     {L'ク', L"ｸ"},  {L'グ', L"ｸﾞ"}, {L'ケ', L"ｹ"},  {L'ゲ', L"ｹﾞ"}, {L'コ', L"ｺ"},  {L'ゴ', L"ｺﾞ"}, {L'サ', L"ｻ"},
@@ -513,8 +504,7 @@ static std::unordered_map<char, std::vector<reg>> regs = {
 
 template <typename T>
 struct nohash {
-    template <typename T>
-    constexpr T operator()(T& s) const noexcept {
+    constexpr T operator()(const T& s) const noexcept {
         return s;
     }
 };
@@ -522,7 +512,7 @@ struct nohash {
 
 template <typename T>
 T replaceall(T& std1, T target_std, T change_std) {
-    T::size_type Pos(std1.find(target_std));
+    typename T::size_type Pos(std1.find(target_std));
     while(Pos != T::npos) {
         std1.replace(Pos, target_std.length(), change_std);
         Pos = std1.find(target_std, Pos + change_std.length());
@@ -532,7 +522,7 @@ T replaceall(T& std1, T target_std, T change_std) {
 
 template <typename T>
 T replaceall(T& std1, typename T::value_type target_std, typename T::value_type change_std) {
-    T::size_type Pos(std1.find(target_std));
+    typename T::size_type Pos(std1.find(target_std));
     while(Pos != T::npos) {
         std1[Pos] = change_std;
         Pos = std1.find(target_std, Pos + 1);
@@ -599,7 +589,7 @@ int flatten(PyObject*& mapping, PyObject*& iterable) {
 
     it = PyObject_GetIter(iterable);
     if(it == NULL) {
-        return NULL;
+        return 0;
     }
 
     while((item = PyIter_Next(it)) != NULL) {
@@ -620,7 +610,7 @@ int flatten(PyObject*& mapping, PyObject*& iterable) {
 
     if(PyErr_Occurred()) {
         /* propagate error */
-        return NULL;
+        return 0;
     } else {
         /* continue doing useful work */
         return 1;
@@ -697,7 +687,7 @@ class Kansuji {
     static const std::unordered_map<value_type, index_type> D4_UNIT;
     static const std::array<value_type, 10> D1_KURAI;
     static const std::array<value_type, 3> D3_KURAI;
-    static const std::array<value_type*, 18> D4_KURAI;
+    static const std::array<const value_type*, 18> D4_KURAI;
 
     static const size_type ARRAY_LIMIT = 1024;  //<- pow(2, n)
 
@@ -780,7 +770,7 @@ class Kansuji {
 
     value_type read() {
         if(_reader-- == ucsdata)
-            return NULL;
+            return value_type();
         return *_reader;
     }
     data_type write(index_type i) {
@@ -792,7 +782,7 @@ class Kansuji {
         if(Collections.find(s) != Collections.end()) {
             auto r = Collections.at(s);
             if(r == L""[0])
-                return NULL;
+                return value_type();
             else
                 return r;
         }
@@ -856,7 +846,7 @@ class Kansuji {
         value_type s, c;
         index_type r;
 
-        while((s = read()) != NULL) {
+        while((s = read()) != value_type()) {
             if(Collections.find(s) != Collections.end()) {
                 if((c = Collections.at(s)) == L""[0])
                     continue;
@@ -884,7 +874,7 @@ class Kansuji {
             if((r = get_d3(s)) != (index_type)-1) {
                 doD3(r);
 
-            } else if((r = get_d4(s)) != (index_type)-1 && is_wkunit(nx) || get_d3(nx, 0)) {
+            } else if((r = get_d4(s)) != (index_type)-1 && (is_wkunit(nx) || get_d3(nx, 0))) {
                 doD4(r);
 
             } else {
@@ -902,7 +892,7 @@ class Kansuji {
         return _writer - data_;
     }
 
-    constexpr size_type itok(const uint64_t _integer, const data_type& buffer) {
+    size_type itok(const uint64_t _integer, const data_type& buffer) {
         if(_integer == 0) {
             *buffer = L'零';
             return size_type(1);
@@ -953,7 +943,7 @@ class Kansuji {
         len = len == (size_type)-1 ? wcslen(u) : len;
         Kansuji ks(u, len);
         auto retlen = ks.ktoi();
-        if(retlen == NULL)
+        if(retlen == int64_t())
             return NULL;
         return ks.data_;
     }
@@ -971,9 +961,10 @@ class Kansuji {
     }
     static data_type int2kanji(const uint64_t i) {
         Kansuji ks;
-        data_type buffer = (data_type)PyMem_Calloc(129, sizeof(value_type));
+        data_type buffer = (data_type)PyMem_MALLOC(129 * sizeof(value_type));
+        std::fill(buffer, buffer + 129, value_type());
         auto retlen = ks.itok(i, buffer);
-        if(retlen == NULL)
+        if(retlen == size_type())
             return NULL;
         return buffer;
     }
@@ -983,7 +974,7 @@ class Kansuji {
         value_type buffer[129] = {0};
         // data_type buffer = PyMem_NEW(value_type, 129);
         auto len = (Py_ssize_t)ks.itok(i, buffer);
-        if(len == NULL)
+        if(len == Py_ssize_t())
             return NULL;
         // return PyUnicode_FromWideChar(buffer, len);
         return PyUnicode_FromKindAndData(2, buffer, len);
@@ -1033,7 +1024,7 @@ const std::unordered_map<Kansuji::value_type, Kansuji::value_type, Kansuji::no_h
 const std::array<Kansuji::value_type, 10> Kansuji::D1_KURAI = {L""[0], L'一', L'二', L'三', L'四',
                                                                L'五',  L'六', L'七', L'八', L'九'};
 const std::array<Kansuji::value_type, 3> Kansuji::D3_KURAI = {L'千', L'百', L'十'};
-const std::array<Kansuji::value_type*, 18> Kansuji::D4_KURAI = {
+const std::array<const Kansuji::value_type*, 18> Kansuji::D4_KURAI = {
     L"",   L"万", L"億", L"兆", L"京",     L"垓",     L"予",     L"穣",       L"溝",
     L"潤", L"正", L"載", L"極", L"恒河沙", L"阿僧祇", L"那由他", L"不可思議", L"無量大数"};
 
@@ -1105,8 +1096,8 @@ inline bool is_ppt(const char* b) {
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 ||
-           (b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f') && strstr(b, "\x00ppt/"))
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 &&
+           ((b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f') || strstr(b, "\x00ppt/")))
             return true;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.presentation", 55) == 0)
             return true;
@@ -1280,11 +1271,12 @@ static int mkdir_p(const char* filepath) {
     if(buf == NULL) {
         return -1;
     }
-    strcpy_s(buf, buflen, filepath);
 
 #if defined(_WIN32) || defined(_WIN64)
+    strcpy_s(buf, buflen, filepath);
     for(p = strchr(buf + 1, '\\'); p; p = strchr(p + 1, '\\')) {
 #else
+    strcpy(buf, filepath);
     for(p = strchr(buf + 1, '/'); p; p = strchr(p + 1, '/')) {
 #endif
         *p = '\0';
@@ -1298,7 +1290,7 @@ static int mkdir_p(const char* filepath) {
 #if defined(_WIN32) || defined(_WIN64)
         if(_mkdir(filepath)) {
 #else
-        if(mkdir(filepath)) {
+        if(mkdir(filepath, 0777)) {
 #endif
             free(buf);
             return -1;
@@ -1402,9 +1394,13 @@ struct Trie {
     constexpr uint64_t save(const char* filepath) noexcept {
         if(nodes.size() > 0 && len > 0 && nodes.size() == len) {
             FILE* fp = NULL;
-            char* magic = "TRIEDATE";
+            const char* magic = "TRIEDATE";
 
+#if defined(_WIN32) || defined(_WIN64)
             if(fopen_s(&fp, filepath, "wb") != 0)
+#else
+            if((fp = fopen(filepath, "wb")) == NULL)
+#endif
                 return (uint64_t)-1;
             if(fp == NULL)
                 return (uint64_t)-1;
@@ -1426,19 +1422,25 @@ struct Trie {
         char magic[9] = {0};
         char checkmagic[9] = "TRIEDATE";
 
-        if(fopen_s(&fp, filepath, "rb") != 0)
+#if defined(_WIN32) || defined(_WIN64)
+            if(fopen_s(&fp, filepath, "rb") != 0)
+#else
+            if((fp = fopen(filepath, "rb")) == NULL)
+#endif
             return (uint64_t)-1;
         if(fp == NULL)
             return (uint64_t)-1;
-        fread(magic, 1, 8, fp);
+        std::size_t r = fread(magic, 1, 8, fp);
 
-        if(magic == NULL || strcmp(magic, checkmagic))
+        if(r < 8 || magic == NULL || strcmp(magic, checkmagic))
             return (uint64_t)-1;
 
-        fread(&len, sizeof(len), 1, fp);
+        if (fread(&len, sizeof(len), 1, fp) < 1)
+            return (uint64_t)-1;
         nodes.resize(len + 1);
 
-        fread(&(nodes.data()[0]), sizeof(TrieNode), len, fp);
+        if (fread(&(nodes.data()[0]), sizeof(TrieNode), len, fp) < len)
+            return (uint64_t)-1;
 
         fclose(fp);
         return nodes.size();
@@ -1620,8 +1622,8 @@ int builder_datetime(const char* dirpath) {
         {L"白雉", int(650)},     {L"大化", int(645)},
     };
 
-    static wchar_t ymdsep[] = {NULL, L'/', L'-', L'_', L'.', L','};
-    static wchar_t hmssep[] = {NULL, L':', L'_', L'.'};
+    static wchar_t ymdsep[] = {0, L'/', L'-', L'_', L'.', L','};
+    static wchar_t hmssep[] = {0, L':', L'_', L'.'};
     static const std::wstring half[] = {L"am", L"pm",  L"a.m", L"p.m",  L"a.m.", L"p.m.", L"AM",
                           L"PM", L"A.M", L"P.M", L"A.M.", L"P.M.", L"午前", L"午後"};
     static const std::vector<std::pair<std::wstring, int> > tzone = {
@@ -1912,7 +1914,12 @@ int builder_datetime(const char* dirpath) {
         }
     }
 
+#if defined(_WIN32) || defined(_WIN64)
     std::size_t len = strnlen_s(dirpath, 255);
+#else
+    std::size_t len = strnlen(dirpath, 255);
+#endif
+
     if(len == 0)
         return -1;
     std::string dp(dirpath);
@@ -1938,9 +1945,13 @@ int builder_datetime(const char* dirpath) {
     ZZ.save((dp + std::string("ZZ") + ext).data());
     { /* save VALIDATOR */
         FILE* fp = NULL;
-        char* magic = "TRIEDATE";
+        const char* magic = "TRIEDATE";
         auto _len = VALIDATOR.size();
+#if defined(_WIN32) || defined(_WIN64)
         if(fopen_s(&fp, (dp + std::string("VALIDATOR") + ext).data(), "wb") != 0)
+#else
+        if((fp = fopen((dp + std::string("VALIDATOR") + ext).data(), "wb")) == NULL)
+#endif
             return -1;
         fwrite(magic, 1, 8, fp);
         fwrite(&_len, sizeof(_len), 1, fp);
@@ -1952,7 +1963,13 @@ int builder_datetime(const char* dirpath) {
 }
 
 int loader_datetime(const char* dirpath) {
+
+#if defined(_WIN32) || defined(_WIN64)
     std::size_t len = strnlen_s(dirpath, 255);
+#else
+    std::size_t len = strnlen(dirpath, 255);
+#endif
+
     if(len == 0)
         return -1;
     std::string dp(dirpath);
@@ -1977,19 +1994,23 @@ int loader_datetime(const char* dirpath) {
         char checkmagic[9] = "TRIEDATE";
         std::size_t _len = (std::size_t)-1;
 
+#if defined(_WIN32) || defined(_WIN64)
         if(fopen_s(&fp, (dp + std::string("VALIDATOR") + ext).data(), "rb") != 0) {
+#else
+        if((fp = fopen((dp + std::string("VALIDATOR") + ext).data(), "rb")) == NULL) {
+#endif
             return -1;
         }
         if(fp == NULL)
             return -1;
 
-        fread(magic, 1, 8, fp);
-        if(magic == NULL || strcmp(magic, checkmagic)) {
+        std::size_t r = fread(magic, 1, 8, fp);
+        if(r < 8 || magic == NULL || strcmp(magic, checkmagic)) {
             fclose(fp);
             return -1;
         }
-        fread(&_len, sizeof(_len), 1, fp);
-        if(len < 1) {
+        r = fread(&_len, sizeof(_len), 1, fp);
+        if(r < 1 || len < 1) {
             fclose(fp);
             return -1;
         }
@@ -1997,8 +2018,9 @@ int loader_datetime(const char* dirpath) {
         std::size_t sz = sizeof(wchar_t);
 
         for(std::size_t i = 0; i < _len; i++) {
-            wchar_t s = NULL;
-            fread(&s, sz, 1, fp);
+            wchar_t s = 0;
+            if (fread(&s, sz, 1, fp) < 1)
+                return -1;
             if(VALIDATOR.find(s) == VALIDATOR.end())
                 VALIDATOR.insert(s);
         }
@@ -2121,7 +2143,11 @@ struct datetime {
 
         if(0 <= year && year <= 68) {
             std::time_t rawtime = std::mktime(&timeinfo);
+#if defined(_WIN32) || defined(_WIN64)
             if(localtime_s(&timeinfo, &rawtime))
+#else
+            if(localtime_r(&rawtime, &timeinfo))
+#endif
                 return false;
         }
         return true;
@@ -2191,7 +2217,11 @@ struct datetime {
         const int alen = 80;
         wchar_t newformat[alen] = {0};
         wchar_t* p = &newformat[0];
+#if defined(_WIN32) || defined(_WIN64)
         uint64_t n = wcsnlen_s(format, alen);
+#else
+        uint64_t n = wcsnlen(format, alen);
+#endif
         if(!n)
             return format;
 
@@ -2329,7 +2359,7 @@ void const_datetime() {
         dirpath += "\\dat";
         free(pth);
 #else
-        char* pth = getenv("TMP");
+        const char* pth = getenv("TMP");
         if(!pth)
             pth = "/tmp";
         std::string dirpath(pth);
@@ -2437,17 +2467,14 @@ datetime parse_datetime(const std::wstring& str, const bool dayfirst = false) no
 
 datetime to_datetime(const std::wstring& str, const bool dayfirst = false, const uint64_t minlimit = 3) {
     const_datetime();
-    uint64_t i = 0, j = 0, k = 0, t = 0, c = 0, beg = 0, last = 0;
+    uint64_t i = 0, j = 0, k = 0, c = 0, beg = 0, last = 0;
     int ps = 0, ww = 0;
-    wchar_t ts = NULL;
+    wchar_t ts = 0;
     datetime dt = nullptr;
     bool isbothkako = false;
     const uint64_t len_2 = str.size() - 2;
 
     for(auto&& s = str.cbegin(), end = str.cend() + 1; s != end; ++s, ++j) {
-        if(i == 0)
-            t = j;
-
         if(*s == L'(' || *s == L')' || *s == L'（' || *s == L'）') {
             ps = TRAN.at(*s);
             ww = 0;
@@ -2501,18 +2528,15 @@ datetime to_datetime(const std::wstring& str, const bool dayfirst = false, const
 
 PyObject* extractdate(const std::wstring& str, const bool dayfirst = false, const uint64_t minlimit = 3) {
     const_datetime();
-    uint64_t i = 0, j = 0, k = 0, t = 0, c = 0, beg = 0, last = 0;
+    uint64_t i = 0, j = 0, k = 0, c = 0, beg = 0, last = 0;
     int ps = 0, ww = 0;
-    wchar_t ts = NULL;
+    wchar_t ts = 0;
     PyObject* ret = PyList_New(0);
     datetime dt = nullptr;
     bool isbothkako = false;
     const uint64_t len_2 = str.size() - 2;
 
     for(auto&& s = str.begin(), end = str.end() + 1; s != end; ++s, ++j) {
-        if(i == 0)
-            t = j;
-
         if(*s == L'(' || *s == L')' || *s == L'（' || *s == L'）') {
             ps = TRAN.at(*s);
             ww = 0;
@@ -2574,12 +2598,13 @@ PyObject* extractdate(const std::wstring& str, const bool dayfirst = false, cons
 
 
 std::wstring normalized_datetime(const std::wstring& str,
-                                wchar_t* format = L"%Y/%m/%d %H:%M:%S",
-                                const bool dayfirst = false, const uint64_t minlimit = 3) {
+                                const wchar_t* format = L"%Y/%m/%d %H:%M:%S",
+                                const bool dayfirst = false,
+                                const uint64_t minlimit = 3) {
     const_datetime();
     uint64_t i = 0, j = 0, k = 0, t = 0, c = 0, beg = 0, last = 0;
     int ps = 0, ww = 0;
-    wchar_t ts = NULL;
+    wchar_t ts = 0;
     std::wstring ret;
     datetime dt = nullptr;
     bool isbothkako = false;
@@ -2944,6 +2969,8 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
         return PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
     
     PyDateTime_DateTime* dt = (PyDateTime_DateTime*)PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
+
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 7
     PyObject* timedelta = PyDelta_FromDSU(0, res.offset, 0);
     if(res.tzname.empty()) {
         dt->tzinfo = PyTimeZone_FromOffset(timedelta);
@@ -2954,6 +2981,7 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
     }
     dt->hastzinfo = 1;
     Py_DECREF(timedelta);
+#endif
     return (PyObject*)dt;
 }
 
@@ -2979,7 +3007,7 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
 extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyObject* kwargs) {
     PyObject* o;
     const wchar_t* str;
-    wchar_t* fmt;
+    const wchar_t* fmt;
     std::wstring res;
 
     PyObject* format = NULL;

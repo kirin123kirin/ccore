@@ -3,11 +3,15 @@
 
 from timeit import timeit
 from datetime import datetime, timezone, timedelta
-import os
+import os, sys
 from psutil import virtual_memory, Process
 process = Process(os.getpid())
-from ccore.ccore import *
-smip = 'from ccore.ccore import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
+try:
+    from ccore.ccore import *
+    smip = 'from ccore.ccore import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
+except:
+    from ccore import *
+    smip = 'from ccore import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
 
 def memusage():
     return process.memory_info()[0] / 1024
@@ -73,7 +77,7 @@ def test_int2kanji():
 
 def test_to_datetime():
     import shutil
-    shutil.rmtree(os.path.join(os.environ["TMP"] , "dat"), True)
+    shutil.rmtree(os.path.join(os.environ.get("TMP", "/tmp") , "dat"), True)
     assert(to_datetime('2000/01/01') == datetime(2000, 1, 1))
     assert(to_datetime('1999/01/01') == datetime(1999, 1, 1))
     assert(to_datetime('20060314') == datetime(2006, 3, 14))
@@ -121,10 +125,6 @@ def test_to_datetime():
     assert(to_datetime('20060314T1327') == datetime(2006, 3, 14, 13, 27))
     assert(to_datetime('20060314T132754') == datetime(2006, 3, 14, 13, 27, 54))
     assert(to_datetime('20060314T132754123') == datetime(2006, 3, 14, 13, 27, 54, 123000))
-    assert(to_datetime('2006-03-14T13:27:54+03:45') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(hours=3, minutes=45))))
-    assert(to_datetime('2006-03-14T13:27+03:45') == datetime(2006, 3, 14, 13, 27, tzinfo=timezone(timedelta(hours=3, minutes=45))))
-    assert(to_datetime('14/Mar/2006:13:27:54 -0537') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(hours=-5, minutes=-37))))
-    assert(to_datetime('Sat, 14 Mar 2006 13:27:54 GMT') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(seconds=0))))
     assert(to_datetime('08-24-2001 20:10') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('Friday, August 24th, 2001 20:10') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('Fri Aug. 24, 2001 8:10 p.m.') == datetime(2001, 8, 24, 20, 10))
@@ -133,20 +133,36 @@ def test_to_datetime():
     assert(to_datetime('2001/08/24 2010') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('2001年8月24日金曜日 20:10') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('2001年8月24日(金) 20:10') == datetime(2001, 8, 24, 20, 10))
-    assert(to_datetime('平成１３年８月２４日　午後八時十分') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime('平成13年08月24日PM 08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime('H13年08月24日　PM08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime('平13年08月24日　午後8:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime('平成13年08/24午後08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime('平成元年０８月２４日　２０時１０分００秒') == datetime(1989, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
-    assert(to_datetime("平成一年一月十一日") == datetime(1989, 1, 11, tzinfo=timezone(timedelta(hours=9))))
     assert(to_datetime('3月 25 00:40') == datetime(1970, 3, 25, 0, 40))
     assert(to_datetime('11月 29  2018') == datetime(2018, 11, 29))
     assert(to_datetime('1月 16  2019') == datetime(2019, 1, 16))
-    assert(to_datetime('天正10年6月2日') == datetime(1582, 6, 2,tzinfo=timezone(timedelta(hours=9))))
     assert(to_datetime("1999/12/31") == datetime(1999,12,31))
-    
-
+    if sys.version_info[:2] >= (3, 7):
+        assert(to_datetime('2006-03-14T13:27:54+03:45') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(hours=3, minutes=45))))
+        assert(to_datetime('2006-03-14T13:27+03:45') == datetime(2006, 3, 14, 13, 27, tzinfo=timezone(timedelta(hours=3, minutes=45))))
+        assert(to_datetime('14/Mar/2006:13:27:54 -0537') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(hours=-5, minutes=-37))))
+        assert(to_datetime('Sat, 14 Mar 2006 13:27:54 GMT') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(seconds=0))))
+        assert(to_datetime('平成１３年８月２４日　午後八時十分') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('平成13年08月24日PM 08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('H13年08月24日　PM08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('平13年08月24日　午後8:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('平成13年08/24午後08:10') == datetime(2001, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('平成元年０８月２４日　２０時１０分００秒') == datetime(1989, 8, 24, 20, 10,tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime("平成一年一月十一日") == datetime(1989, 1, 11, tzinfo=timezone(timedelta(hours=9))))
+        assert(to_datetime('天正10年6月2日') == datetime(1582, 6, 2,tzinfo=timezone(timedelta(hours=9))))
+    else:
+        assert(to_datetime('2006-03-14T13:27:54+03:45') == datetime(2006, 3, 14, 13, 27, 54))
+        assert(to_datetime('2006-03-14T13:27+03:45') == datetime(2006, 3, 14, 13, 27))
+        assert(to_datetime('14/Mar/2006:13:27:54 -0537') == datetime(2006, 3, 14, 13, 27, 54))
+        assert(to_datetime('Sat, 14 Mar 2006 13:27:54 GMT') == datetime(2006, 3, 14, 13, 27, 54))
+        assert(to_datetime('平成１３年８月２４日　午後八時十分') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime('平成13年08月24日PM 08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime('H13年08月24日　PM08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime('平13年08月24日　午後8:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime('平成13年08/24午後08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime('平成元年０８月２４日　２０時１０分００秒') == datetime(1989, 8, 24, 20, 10))
+        assert(to_datetime("平成一年一月十一日") == datetime(1989, 1, 11))
+        assert(to_datetime('天正10年6月2日') == datetime(1582, 6, 2))
 
     test = """
     ====== ここからWikipediaの織田信長から引用文 ======
