@@ -40,8 +40,12 @@ UNDEF_MACROS = []
 iswin = os.name == "nt"
 isposix = os.name == "posix"
 ismsvc = get_default_compiler() == "msvc"
-sep = lambda *x : (":" if ismsvc else "=").join(x)
+
 globalinc = 'C:/usr/lib' if iswin else '/usr/include'
+
+def sep(*x):
+    return (":" if ismsvc else "=").join(x)
+
 
 COMPILE_ARGS = [
     sep('-std', 'c++14'),
@@ -65,7 +69,7 @@ if any("--debug" in x or "-g" in x for x in sys.argv):
                 "/FC",
             ]
         )
-    
+
     elif isposix:
         COMPILE_ARGS.extend(
             [
