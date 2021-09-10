@@ -2060,7 +2060,7 @@ struct datetime {
                 wchar_t microsec[6];
             };
         };
-    } tzstr{0};
+    } tzstr;
 
     datetime() : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
     datetime(nullptr_t) : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
