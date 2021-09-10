@@ -18,9 +18,9 @@
   "version": "0.2.0",
   "configurations": [
     {
-    //
-    // from C++ Run Debugger
-    //
+      //
+      // from C++ Run Debugger
+      //
       "name": "Win : C++ Debug",
       "type": "cppvsdbg",
       "request": "launch",
@@ -79,6 +79,67 @@
       "justMyCode": false,
       "cwd": "${workspaceFolder}/build",
       "preLaunchTask": "Win : ReleaseSetup.py",
+      "console": "internalConsole"
+    },
+    //
+    // from Python to C++ Debug Run
+    //
+    {
+      "name": "Win : Instant Debug from py",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "python",
+      "args": [
+        "${file}"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "console": "internalConsole",
+      "preLaunchTask": "Win : DebugSetup.py"
+    },
+    {
+      "name": "Win : Instant Release from py",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "python",
+      "args": [
+        "${file}"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build",
+      "environment": [],
+      "console": "internalConsole",
+      "preLaunchTask": "Win : ReleaseSetup.py"
+    },
+    {
+      //
+      // from C++ Run Debugger for linux
+      //
+      "name": "linux : C++ Debug",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/${fileBasenameNoExtension}",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "preLaunchTask": "linux : Debug C++",
+      "console": "internalConsole"
+    },
+    {
+      //
+      // from C++ Release Run for linux
+      //
+      "name": "linux : C++ Release",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/${fileBasenameNoExtension}",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "preLaunchTask": "linux : Release C++",
       "console": "internalConsole"
     },
     // //
@@ -146,40 +207,36 @@
       "console": "internalConsole"
     },
     //
-    // from Python to C++ Debug Run
+    // from Python to C++ Release Run for Linux
     //
     {
-      "name": "Win : Instant Debug from py",
-      "type": "cppvsdbg",
+      "name": "linux : Instant Release from py",
+      "type": "cppdbg",
       "request": "launch",
-      "program": "python",
+      "program": "/usr/bin/python3",
       "args": [
         "${file}"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
-      "console": "internalConsole",
-      "preLaunchTask": "Win : DebugSetup.py"
-    },
-    {
-      "name": "Win : Instant Release from py",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "python",
-      "args": [
-        "${file}"
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable reformat of gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
       ],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build",
-      "environment": [],
-      "console": "internalConsole",
-      "preLaunchTask": "Win : ReleaseSetup.py"
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerArgs": "-q -ex quit; wait() { fg >/dev/null; }; /usr/bin/gdb -q -f --interpreter=mi",
+      "preLaunchTask": "linux : ReleaseSetup.py",
+      "console": "internalConsole"
     },
-
     // for Python
     {
-      "name": "Win : Python: Normal Run",
+      "name": "Python: Normal Run",
       "type": "python",
       "request": "launch",
       "program": "${file}",
