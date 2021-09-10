@@ -3137,4 +3137,4 @@ static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MOD
 #endif
 
 PARSE_FUNC(MODULE_NAME)
-//
+//EOF msvc error C2612
