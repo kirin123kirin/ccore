@@ -41,15 +41,15 @@ iswin = os.name == "nt"
 isposix = os.name == "posix"
 ismsvc = get_default_compiler() == "msvc"
 
-globalinc = 'C:/usr/lib/' if iswin else '/usr/include/'
+globalinc = '/IC:/usr/lib/' if iswin else '-I/usr/include/'
 
 def sep(*x):
     return (":" if ismsvc else "=").join(x)
 
 
 COMPILE_ARGS = [
-    sep('-std', 'c++14'),
-    '-I' + globalinc + 'boost',
+    # sep('-std', 'c++14'),
+    # globalinc + 'boost',
 ]
 
 if any("--debug" in x or "-g" in x for x in sys.argv):

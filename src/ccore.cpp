@@ -2062,7 +2062,7 @@ struct datetime {
         };
     } tzstr{0};
 
-    datetime() : timeinfo(), microsec(0), offset(-1), noon(0), tzname(){};
+    datetime() : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {};
     datetime(nullptr_t) : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
     datetime(int _year, int _month, int _day, int _hour, int _minn, int _sec, int _mincrosec, int _offset = -1) {
         this->operator()(_year, _month, _day, _hour, _minn, _sec, microsec, _offset);
