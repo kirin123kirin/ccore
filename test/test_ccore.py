@@ -42,7 +42,7 @@ def runtimeit(funcstr, setup=smip, number=100000, normalize=10000):
         try:
             print("{}: {} ns (mem after {}KB)".format(fc, int(p * normalize), am))
         except UnicodeEncodeError:
-            print("{}: {} ns (mem after {}KB)".format(repr(fc), int(p * normalize), am))
+            print("???: {} ns (mem after {}KB)".format(int(p * normalize), am))
         i += 1
 
 
