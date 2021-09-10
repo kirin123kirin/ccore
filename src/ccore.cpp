@@ -3136,5 +3136,5 @@ static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MOD
 #define PARSE_FUNC(mn) PyMODINIT_FUNC PARSE_NAME(mn)
 #endif
 
-PARSE_FUNC(MODULE_NAME)
-//
+PARSE_FUNC(MODULE_NAME);
+
