@@ -41,7 +41,7 @@ iswin = os.name == "nt"
 isposix = os.name == "posix"
 ismsvc = get_default_compiler() == "msvc"
 
-globalinc = 'C:/usr/lib' if iswin else '/usr/include'
+globalinc = 'C:/usr/lib/' if iswin else '/usr/include/'
 
 def sep(*x):
     return (":" if ismsvc else "=").join(x)
