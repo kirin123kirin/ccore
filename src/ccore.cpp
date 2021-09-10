@@ -708,7 +708,7 @@ class Kansuji {
 
     /* Initialize */
     Kansuji() : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
-    Kansuji(nullptr_t) : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
+    Kansuji(std::nullptr_t) : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
     Kansuji(const value_type* u, size_type _len) : ucsdata(u), _reader(NULL), len(_len) {
         if((len * 5) < ARRAY_LIMIT) {
             data_ = fast_data_;
@@ -1328,7 +1328,7 @@ struct Trie {
         this->nodes.push_back(root);
         this->len = 1;
     }
-    Trie(nullptr_t) : len(0) {}
+    Trie(std::nullptr_t) : len(0) {}
 
     Trie(size_t len) {
         if(len) {
@@ -2063,7 +2063,7 @@ struct datetime {
     } tzstr{0};
 
     datetime() : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
-    datetime(nullptr_t) : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
+    datetime(std::nullptr_t) : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
     datetime(int _year, int _month, int _day, int _hour, int _minn, int _sec, int _mincrosec, int _offset = -1) {
         this->operator()(_year, _month, _day, _hour, _minn, _sec, microsec, _offset);
     }
@@ -2158,14 +2158,14 @@ struct datetime {
                noon == other.noon && tzname == other.tzname;
     }
 
-    bool operator==(nullptr_t) {
+    bool operator==(std::nullptr_t) {
         return microsec == 0 && sec == 0 && min == 0 && hour == 0 && day == 0 && month == 0 && year == 0 &&
                offset == -1 && noon == 0 && tzname.empty();
     }
     bool operator!=(datetime& other) {
         return !operator==(other);
     }
-    bool operator!=(nullptr_t) {
+    bool operator!=(std::nullptr_t) {
         return !operator==(nullptr);
     }
 
@@ -2305,7 +2305,7 @@ struct datetime {
     //     return NULL;
     // }
 
-    static constexpr int _find(const std::wstring& str, uint64_t* i, nullptr_t) noexcept { return 0; }
+    static constexpr int _find(const std::wstring& str, uint64_t* i, std::nullptr_t) noexcept { return 0; }
 
     template <std::size_t N>
     static constexpr int _find(const std::wstring& str, uint64_t* i, const Trie<N>* node) noexcept {
