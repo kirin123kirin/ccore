@@ -39,7 +39,10 @@ def runtimeit(funcstr, setup=smip, number=100000, normalize=10000):
         bm = memusage()
         p = timeit(fc, st, number=number)
         am = (memusage() - bm)
-        print("{}: {} ns (mem after {}KB)".format(fc, int(p * normalize), am))
+        try:
+            print("{}: {} ns (mem after {}KB)".format(fc, int(p * normalize), am))
+        except UnicodeEncodeError:
+            print("{}: {} ns (mem after {}KB)".format(repr(fc), int(p * normalize), am))
         i += 1
 
 
