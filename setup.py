@@ -48,8 +48,8 @@ def sep(*x):
 
 
 COMPILE_ARGS = [
-    # sep('-std', 'c++14'),
-    # globalinc + 'boost',
+    sep('-std', 'c++14'),
+    globalinc + 'boost',
 ]
 
 if any("--debug" in x or "-g" in x for x in sys.argv):
