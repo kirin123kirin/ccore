@@ -1378,7 +1378,7 @@ struct Trie {
 
     constexpr bool query(const std::wstring& str) noexcept {
         uint64_t i = 0;
-        int sid, tmp;
+        int sid = 0, tmp = 0;
         for(auto&& c : str) {
             if(TRAN.find(c) == TRAN.end())
                 return false;
