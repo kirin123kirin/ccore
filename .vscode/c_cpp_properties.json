@@ -26,7 +26,26 @@
             "cStandard": "c11",
             "cppStandard": "c++14",
             "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "linux64_d",
+            "includePath": [
+                ".",
+                "/usr/include/python3.6",
+                "/usr/local/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "gcc-x64"
         }
+
     ],
     "version": 4
 }

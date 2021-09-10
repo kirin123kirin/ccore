@@ -8,10 +8,73 @@ import io
 import sys
 from os.path import dirname, join as pjoin
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
+
+DESCRIPTION = "core utility units for python"
+KEYWORDS = ["flatten", "to_datetime"]
+LISCENSE = "MIT"
+LANGUAGE = 'c++'
+MOD_NAME = 'ccore'
+MOD_SRC = ['src/ccore.cpp']
+AUTHOR = 'kirin123kirin'
+URL = 'https://github.com/' + AUTHOR + '/' + MOD_NAME
+PLATFORMS = ["Windows", "Linux", "Mac OS-X"]
+
+# # https://pypi.org/classifiers/
+CLASSIFIERS = """
+Development Status :: 2 - Pre-Alpha
+License :: OSI Approved :: MIT License
+Programming Language :: C
+Programming Language :: C++
+Programming Language :: Python :: 3.6
+Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
+Operating System :: OS Independent
+Operating System :: Microsoft :: Windows
+Operating System :: MacOS
+Operating System :: POSIX
+"""
+UNDEF_MACROS = []
+
+iswin = os.name == "nt"
+isposix = os.name == "posix"
+ismsvc = get_default_compiler() == "msvc"
+sep = lambda *x : (":" if ismsvc else "=").join(x)
+globalinc = 'C:/usr/lib' if iswin else '/usr/include'
+
+COMPILE_ARGS = [
+    sep('-std', 'c++14'),
+    '-I' + globalinc + 'boost',
+]
+
+if any("--debug" in x or "-g" in x for x in sys.argv):
+    if ismsvc:
+        UNDEF_MACROS.extend(
+            [
+                "_DEBUG",
+            ]
+        )
+        COMPILE_ARGS.extend(
+            [
+                # Reason https://docs.microsoft.com/ja-jp/cpp/build/reference/ltcg-link-time-code-generation?view=msvc-160
+                "/GL",
+                # Reason unicode string crash #
+                "/source-charset:utf-8",
+                # Reason IDE warning link crash #
+                "/FC",
+            ]
+        )
+    
+    elif isposix:
+        COMPILE_ARGS.extend(
+            [
+                "-O0",
+            ]
+        )
 
 # Edit posix platname for pypi upload error
-if os.name == "posix" and any(x.startswith("bdist") for x in sys.argv) \
+if isposix and any(x.startswith("bdist") for x in sys.argv) \
         and not ("--plat-name" in sys.argv or "-p" in sys.argv):
 
     if "64" in os.uname()[-1]:
@@ -24,55 +87,6 @@ if os.name == "posix" and any(x.startswith("bdist") for x in sys.argv) \
         plat = get_platname_32bit()
     sys.argv.extend(["--plat-name", plat])
 
-MOD_NAME = 'ccore'
-MOD_SRC = ['src/ccore.cpp']
-
-ext_modules = [
-    Extension(
-        MOD_NAME,
-        extra_compile_args=[
-            # '-std:c++14',
-            # '-std:c++17',
-            # '/IC:/usr/lib/boost'
-        ],
-        sources=MOD_SRC,
-        language="c++"
-    )]
-
-if any("--debug" in x or "-g" in x for x in sys.argv) and get_default_compiler() == "msvc":
-    ext_modules = [
-        Extension(
-            MOD_NAME,
-            sources=MOD_SRC,
-            # Reason is Debuging Error "Access violation executing location 0x00000000" when using mwArray in Visual-C++
-            undef_macros=["_DEBUG"],
-            extra_compile_args=[
-                # Reason https://docs.microsoft.com/ja-jp/cpp/build/reference/ltcg-link-time-code-generation?view=msvc-160
-                "/GL",
-                # Reason unicode string crash #
-                "/source-charset:utf-8",
-                # Reason IDE warning link crash #
-                "/FC",
-                "/std:c++14",
-                # "/std:c++17",
-            ],
-            language="c++"
-        )]
-
-CF = """
-Development Status :: 2 - Pre-Alpha
-License :: OSI Approved :: GNU General Public License v2 (GPLv2)
-Programming Language :: C
-Programming Language :: Python :: 3.6
-Programming Language :: Python :: 3.7
-Programming Language :: Python :: 3.8
-Programming Language :: Python :: 3.9
-Programming Language :: Python :: Implementation :: CPython
-Operating System :: OS Independent
-Operating System :: Microsoft :: Windows
-Operating System :: MacOS
-Operating System :: POSIX
-"""
 
 # Readme read or edit
 readme = pjoin(dirname(__file__), "README.md")
@@ -99,17 +113,25 @@ if sys.version_info[:2] >= (3, 3):
         setup_requires=["pytest-runner"],
         tests_require=["pytest", "pytest-cov", "psutil"])
 
-setup(name="ccore",
+setup(name=MOD_NAME,
       version=__version__,
-      description="core utility units for python",
+      description=DESCRIPTION,
       long_description_content_type='text/markdown',
       long_description=description,
-      url='https://github.com/kirin123kirin/ccore',
-      author='kirin123kirin',
-      ext_modules=ext_modules,
-      keywords=["flatten", "to_datetime"],
-      license="MIT",
-      platforms=["Windows", "Linux", "Mac OS-X"],
-      classifiers=CF.strip().splitlines(),
+      url=URL,
+      author=AUTHOR,
+      ext_modules=[
+          Extension(
+              MOD_NAME,
+              sources=MOD_SRC,
+              undef_macros=UNDEF_MACROS,
+              extra_compile_args=COMPILE_ARGS,
+              language=LANGUAGE
+          )
+      ],
+      keywords=KEYWORDS,
+      license=LISCENSE,
+      platforms=PLATFORMS,
+      classifiers=CLASSIFIERS.strip().splitlines(),
       **tests
       )

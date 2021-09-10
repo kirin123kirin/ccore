@@ -19,7 +19,7 @@
   "tasks": [
     {
       "type": "cppbuild",
-      "label": "prebuild",
+      "label": "Win : prebuild",
       "command": "mkdir",
       "args": [
         "build\\Debug",
@@ -42,8 +42,30 @@
       },
     },
     {
+      "type": "cppbuild",
+      "label": "linux : prebuild",
+      "command": "mkdir",
+      "args": [
+        "-p",
+        "build/Debug",
+        ">/dev/null",
+        "2>&1",
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "never",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+    },
+    {
       "type": "process",
-      "label": "ReleaseSetup.py",
+      "label": "Win : ReleaseSetup.py",
       "command": "${env:PYTHONPATH}\\python.exe",
       "args": [
         "setup.py",
@@ -64,7 +86,7 @@
     },
     {
       "type": "process",
-      "label": "DebugSetup.py",
+      "label": "Win : DebugSetup.py",
       "command": "${env:PYTHONPATH}\\python.exe",
       "args": [
         "setup.py",
@@ -84,8 +106,50 @@
       ],
     },
     {
+      "type": "process",
+      "label": "linux : ReleaseSetup.py",
+      "command": "/usr/bin/python3",
+      "args": [
+        "setup.py",
+        "build",
+        "-f"
+      ],
+      "group": //"build",
+      {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+    },
+    {
+      "type": "process",
+      "label": "linux : DebugSetup.py",
+      "command": "/usr/bin/python3",
+      "args": [
+        "setup.py",
+        "build",
+        "-gf"
+      ],
+      "group": //"build",
+      {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+    },
+    {
       "type": "cppbuild",
-      "label": "Debug C++",
+      "label": "Win : Debug C++",
       "command": "cmd.exe",
       "args": [
         "/C",
@@ -161,14 +225,14 @@
       },
       "dependsOrder": "sequence",
       "dependsOn": [
-        "prebuild"
+        "Win : prebuild"
       ],
       "group": "build",
       "detail": "cl.exe"
     },
     {
       "type": "cppbuild",
-      "label": "Release C++",
+      "label": "Win : Release C++",
       "command": "cmd.exe",
       "args": [
         "/C",
@@ -228,10 +292,29 @@
       },
       "dependsOrder": "sequence",
       "dependsOn": [
-        "prebuild"
+        "Win : prebuild"
       ],
       "group": "build",
       "detail": "cl.exe"
-    }
+    },
+    {
+      "type": "shell",
+      "label": "linux : C++ Debug",
+      "command": "/usr/bin/g++",
+      "args": [
+        "-g",
+        "${file}",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": "build"
+    },
+
   ]
 }

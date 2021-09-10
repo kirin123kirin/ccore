@@ -6,12 +6,21 @@ from datetime import datetime, timezone, timedelta
 import os, sys
 from psutil import virtual_memory, Process
 process = Process(os.getpid())
+
+IMPORTS = ' import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
 try:
     from ccore.ccore import *
-    smip = 'from ccore.ccore import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
+    smip = 'from ccore.ccore'
 except:
-    from ccore import *
-    smip = 'from ccore import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
+    from ccore.build.ccore import *
+    smip = 'from ccore.build.ccore'
+    try:
+        from build.ccore import *
+        smip = 'from build.ccore'
+    except:
+        from ccore import *
+        smip = 'from ccore'
+
 
 def memusage():
     return process.memory_info()[0] / 1024
