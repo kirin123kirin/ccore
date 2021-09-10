@@ -16,20 +16,23 @@ jobs:
          matrix:
             platform: [
                   windows-latest,
-                  # ubuntu-latest,
-                  # macos-latest
+                  ubuntu-latest,
+                  macos-latest
             ]
             python-version: [
                   # 2.7,
                   3.6,
-                  # 3.7,
-                  # 3.8,
-                  # 3.9,
+                  3.7,
+                  3.8,
+                  3.9,
             ]
             exclude:
                -
                   platform:       windows-latest
                   python-version: 2.7
+               -
+                  platform:       windows-latest
+                  python-version: 3.6
                -
                   platform:       macos-latest
                   python-version: 2.7

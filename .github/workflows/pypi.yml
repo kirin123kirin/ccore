@@ -20,12 +20,12 @@ jobs:
          max-parallel: 15
          matrix:
             platform: [
-                  ubuntu-latest,
                   windows-latest,
+                  ubuntu-latest,
                   macos-latest
             ]
             python-version: [
-                  2.7,
+                  # 2.7,
                   3.6,
                   3.7,
                   3.8,
@@ -36,12 +36,17 @@ jobs:
                   platform:       windows-latest
                   python-version: 2.7
                -
+                  platform:       windows-latest
+                  python-version: 3.6
+               -
                   platform:       macos-latest
                   python-version: 2.7
 
       steps:
          -
             uses: actions/checkout@v2
+            with:
+               submodules: true
          -
             name: Setup Python ${{ matrix.python-version }}
             uses: actions/setup-python@v2
@@ -93,15 +98,18 @@ jobs:
       strategy:
          max-parallel: 5
          matrix:
-            python-version: [ python27,
-                              python36,
-                              python37,
-                              python38,
-                              python39,
+            python-version: [ 
+                  # python27,
+                  python36,
+                  python37,
+                  python38,
+                  python39,
             ]
       steps:
          -
             uses: actions/checkout@v2.1.0
+            with:
+               submodules: true
          -
             uses: kirin123kirin/run-on-arch-action@master
             name: Run commands

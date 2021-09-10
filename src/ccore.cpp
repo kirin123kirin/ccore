@@ -2981,7 +2981,7 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
     
     PyDateTime_DateTime* dt = (PyDateTime_DateTime*)PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
 
-#if PY_MAJOR_VERSION >= 3
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 7
     PyObject* timedelta = PyDelta_FromDSU(0, res.offset, 0);
     if(res.tzname.empty()) {
         dt->tzinfo = PyTimeZone_FromOffset(timedelta);
