@@ -12,14 +12,16 @@ try:
     from ccore.ccore import *
     smip = 'from ccore.ccore'
 except:
-    from ccore.build.ccore import *
-    smip = 'from ccore.build.ccore'
     try:
-        from build.ccore import *
-        smip = 'from build.ccore'
+        from ccore.build.ccore import *
+        smip = 'from ccore.build.ccore'
     except:
-        from ccore import *
-        smip = 'from ccore'
+        try:
+            from build.ccore import *
+            smip = 'from build.ccore'
+        except:
+            from ccore import *
+            smip = 'from ccore'
 
 
 def memusage():
