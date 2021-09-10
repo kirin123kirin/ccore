@@ -1345,7 +1345,7 @@ struct Trie {
 
     constexpr void insert(const std::wstring& str, int value) noexcept {
         uint64_t i = 0;
-        int sid;
+        int sid = 0;
 
         for(auto&& s : str) {
             if(TRAN.find(s) == TRAN.end())
@@ -1364,7 +1364,7 @@ struct Trie {
 
     constexpr int common_prefix(const std::wstring& str) noexcept {
         uint64_t i = 0;
-        int sid, tmp;
+        int sid = 0, tmp = 0;
         for(auto&& c : str) {
             if(TRAN.find(c) == TRAN.end())
                 break;
@@ -1431,7 +1431,7 @@ struct Trie {
             return (uint64_t)-1;
         std::size_t r = fread(magic, 1, 8, fp);
 
-        if(r < 8 || magic == NULL || strcmp(magic, checkmagic))
+        if(r < 8 || magic[0] != 0 || strcmp(magic, checkmagic))
             return (uint64_t)-1;
 
         if (fread(&len, sizeof(len), 1, fp) < 1)
@@ -2004,7 +2004,7 @@ int loader_datetime(const char* dirpath) {
             return -1;
 
         std::size_t r = fread(magic, 1, 8, fp);
-        if(r < 8 || magic == NULL || strcmp(magic, checkmagic)) {
+        if(r < 8 || magic[0] != 0 || strcmp(magic, checkmagic)) {
             fclose(fp);
             return -1;
         }
@@ -2060,7 +2060,7 @@ struct datetime {
                 wchar_t microsec[6];
             };
         };
-    } tzstr{0};
+    } tzstr{};
 
     datetime() : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
     datetime(std::nullptr_t) : timeinfo(), microsec(0), offset(-1), noon(0), tzname() {}
