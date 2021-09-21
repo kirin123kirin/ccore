@@ -530,6 +530,18 @@ T replaceall(T& std1, typename T::value_type target_std, typename T::value_type 
     return std1;
 }
 
+const char* memstr(const char* str, size_t str_size, 
+                   const char* target, size_t target_size) {
+
+    for (size_t i = 0; i != str_size - target_size; ++i) {
+        if (!memcmp(str + i, target, target_size)) {
+            return str + i;
+        }
+    }
+
+    return NULL;
+}
+
 #define PERL_XS 1
 #include "nkf/nkf.c"
 #include "nkf/utf8tbl.c"
@@ -1046,19 +1058,6 @@ inline constexpr bool is_lha(const char* b) {
     if(b[0] == '\x21' && b[2] == '\x2d' && b[3] == '\x6c' && b[4] == '\x68' && b[6] == '\x2d')
         return true;
     return false;
-}
-
-//@todo
-const char* memstr(const char* str, size_t str_size, 
-                   const char* target, size_t target_size) {
-
-    for (size_t i = 0; i != str_size - target_size; ++i) {
-        if (!memcmp(str + i, target, target_size)) {
-            return str + i;
-        }
-    }
-
-    return NULL;
 }
 
 inline bool is_xls(const char* b, std::size_t len) {
