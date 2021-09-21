@@ -1048,7 +1048,20 @@ inline constexpr bool is_lha(const char* b) {
     return false;
 }
 
-inline bool is_xls(const char* b) {
+//@todo
+const char* memstr(const char* str, size_t str_size, 
+                   const char* target, size_t target_size) {
+
+    for (size_t i = 0; i != str_size - target_size; ++i) {
+        if (!memcmp(str + i, target, target_size)) {
+            return str + i;
+        }
+    }
+
+    return NULL;
+}
+
+inline bool is_xls(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         std::size_t s = (1U << (b[30] + b[31])) * (b[48] + b[49]) + 640U;
         if(b[s] == '\x57' && b[s + 2] == '\x6f' && b[s + 4] == '\x72' && b[s + 6] == '\x6b' && b[s + 8] == '\x62' &&
@@ -1058,7 +1071,7 @@ inline bool is_xls(const char* b) {
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && strstr(b, "\x00xl/"))
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00xl/", 4))
             return true;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.spreadsheet", 54) == 0)
             return true;
@@ -1066,13 +1079,13 @@ inline bool is_xls(const char* b) {
     return false;
 }
 
-inline bool is_doc(const char* b) {
+inline bool is_doc(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         if(b[512] == '\xec' && b[513] == '\xa5')
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && strstr(b, "\x00word/"))
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00word/", 6))
             return true;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.text", 47) == 0)
             return true;
@@ -1081,7 +1094,7 @@ inline bool is_doc(const char* b) {
     return false;
 }
 
-inline bool is_ppt(const char* b) {
+inline bool is_ppt(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         if(b[512] == '\xec' && b[513] == '\xa5')
             return false;
@@ -1096,7 +1109,7 @@ inline bool is_ppt(const char* b) {
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
         if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 &&
-           ((b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f') || strstr(b, "\x00ppt/")))
+           ((b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f') || memstr(b, len, "\x00ppt/", 5)))
             return true;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.presentation", 55) == 0)
             return true;
@@ -1116,10 +1129,10 @@ inline constexpr bool is_json(const char* b) {
     return b[0] == '{' && strchr(b + 1, '}');
 }
 
-inline bool is_dml(const char* b) {
+inline bool is_dml(const char* b, std::size_t len) {
     const char *r1, *r2;
-    if((r1 = strstr(b, "record")) != NULL) {
-        if((r2 = strstr(r1, "end")) != NULL)
+    if((r1 = memstr(b, len, "record", 6)) != NULL) {
+        if((r2 = memstr(r1, len, "end", 3)) != NULL)
             return strchr(r2, ';') != NULL;
     }
     return false;
@@ -1135,21 +1148,22 @@ const char* lookuptype(const char* b, std::size_t len) {
     if(memchr(b, 0, len)) {
         if(len > 513) {
             if(b[0] == 'P' && b[1] == 'K') {
-                if(is_doc(b))
+                if(is_doc(b, len))
                     return "docx";
-                if(is_xls(b))
+                if(is_xls(b, len))
                     return "xlsx";
-                if(is_ppt(b))
+                if(is_ppt(b, len))
                     return "pptx";
             } else if(b[0] == '\xd0') {
-                if(is_doc(b))
+                if(is_doc(b, len))
                     return "doc";
-                if(is_xls(b))
+                if(is_xls(b, len))
                     return "xls";
-                if(is_ppt(b))
+                if(is_ppt(b, len))
                     return "ppt";
             }
-        } else if(len > 262 && is_tar(b)) {
+        }
+        if(len > 262 && is_tar(b)) {
             return "tar";
         } else if(len > 6 && is_lha(b)) {
             return "lha";
@@ -1183,7 +1197,7 @@ const char* lookuptype(const char* b, std::size_t len) {
         return "json";
     if(is_csv(b, len))
         return "csv";
-    if(len > 10 && is_dml(b))
+    if(len > 10 && is_dml(b, len))
         return "dml";
 
     return "txt";
@@ -1470,7 +1484,7 @@ void insert(Trie<N>& NODE, std::wstring str, int value) {
                 kj = L"〇一二三四五六七八九"[s - 0x0030];
                 kansuji += kj;
                 if (value < 100)
-                    kansuji_j = Kansuji::int2kanji(value);
+                    kansuji_j = Kansuji::int2kanji((uint64_t)value);
 
             } else {
                 kansuji += k;
@@ -1719,7 +1733,6 @@ int builder_datetime(const char* dirpath) {
             insert(YYYY, *it + st, v);
         }
     }
-    //@todo
     for(int v = 1; v < 100; ++v) {
         std::wstring st = std::to_wstring(v);
         insert(yy, st, v);
@@ -2848,7 +2861,7 @@ extern "C" PyObject* is_xls_py(PyObject* self, PyObject* args) {
         return NULL;
     if((str = PyBytes_AS_STRING(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
-    res = is_xls(str);
+    res = is_xls(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
 }
 extern "C" PyObject* is_doc_py(PyObject* self, PyObject* args) {
@@ -2860,7 +2873,7 @@ extern "C" PyObject* is_doc_py(PyObject* self, PyObject* args) {
         return NULL;
     if((str = PyBytes_AS_STRING(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
-    res = is_doc(str);
+    res = is_doc(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
 }
 extern "C" PyObject* is_ppt_py(PyObject* self, PyObject* args) {
@@ -2872,7 +2885,7 @@ extern "C" PyObject* is_ppt_py(PyObject* self, PyObject* args) {
         return NULL;
     if((str = PyBytes_AS_STRING(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
-    res = is_ppt(str);
+    res = is_ppt(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
 }
 extern "C" PyObject* is_xml_py(PyObject* self, PyObject* args) {
@@ -2920,7 +2933,7 @@ extern "C" PyObject* is_dml_py(PyObject* self, PyObject* args) {
         return NULL;
     if((str = PyBytes_AS_STRING(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
-    res = is_dml(str);
+    res = is_dml(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
 }
 extern "C" PyObject* is_csv_py(PyObject* self, PyObject* args) {
