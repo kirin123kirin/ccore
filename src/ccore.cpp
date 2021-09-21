@@ -1196,7 +1196,7 @@ static const std::unordered_map<wchar_t, int, nohash<wchar_t> > TRAN = {
     {L'２', int(2)},   {L'３', int(3)},   {L'４', int(4)},   {L'５', int(5)},
     {L'６', int(6)},   {L'７', int(7)},   {L'８', int(8)},   {L'９', int(9)},
     {L'.', int(10)},   {L'．', int(10)},  {L'〇', int(0)},   {L'一', int(1)},
-    {L'二', int(3)},   {L'三', int(3)},   {L'四', int(4)},   {L'五', int(5)},
+    {L'二', int(2)},   {L'三', int(3)},   {L'四', int(4)},   {L'五', int(5)},
     {L'六', int(6)},   {L'七', int(7)},   {L'八', int(8)},   {L'九', int(9)},
     {L'十', int(11)},  {L'_', int(12)},   {L'＿', int(12)},  {L'-', int(13)},
     {L'－', int(13)},  {L',', int(14)},   {L'，', int(14)},  {L'/', int(15)},
@@ -1469,17 +1469,8 @@ void insert(Trie<N>& NODE, std::wstring str, int value) {
             if(0x002f < s && s < 0x003a) {
                 kj = L"〇一二三四五六七八九"[s - 0x0030];
                 kansuji += kj;
-                if(s != 0x0030 && s == ((value / 10) + 0x0030)) {
-                    if (value >= 20)
-                        kansuji_j += kj;
-                    if(kansuji_j.back() != L'十')
-                        kansuji_j += L'十';
-                    else
-                        kansuji_j += kj;
-                } else if(s != 0x0030) {
-                    kansuji_j += kj;
-                }
-
+                if (value < 100)
+                    kansuji_j = Kansuji::int2kanji(value);
 
             } else {
                 kansuji += k;
@@ -1728,14 +1719,17 @@ int builder_datetime(const char* dirpath) {
             insert(YYYY, *it + st, v);
         }
     }
+    //@todo
     for(int v = 1; v < 100; ++v) {
         std::wstring st = std::to_wstring(v);
         insert(yy, st, v);
-        insert(yy, L'\'' + st, v);
+        insert(yy, L'\'' + st, v < 60 ? v + 2000 : v + 1900);
+        insert(YYYY, L'\'' + st, v < 60 ? v + 2000 : v + 1900);
         if(v < 10) {
             std::wstring zfill = L'0' + st;
             insert(yy, zfill, v);
-            insert(yy, L'\'' + zfill, v);
+            insert(yy, L'\'' + zfill, v < 60 ? v + 2000 : v + 1900);
+            insert(YYYY, L'\'' + zfill, v < 60 ? v + 2000 : v + 1900);
         }
         for(auto it = std::begin(ymdsep); it != std::end(ymdsep); ++it) {
             wchar_t sp = *it;
@@ -1744,7 +1738,9 @@ int builder_datetime(const char* dirpath) {
             if(v < 10) {
                 std::wstring zfill = L'0' + st;
                 insert(yy, zfill + sp, v);
-                insert(yy, sp + zfill, v);
+                insert(YYYY, (L'\'' + zfill) + sp, v);
+                insert(yy, sp + (L'\'' + zfill), v < 60 ? v + 2000 : v + 1900);
+                insert(YYYY, sp + zfill, v < 60 ? v + 2000 : v + 1900);
             }
         }
     }

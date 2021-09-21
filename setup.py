@@ -8,7 +8,7 @@ import io
 import sys
 from os.path import dirname, join as pjoin
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 DESCRIPTION = "core utility units for python"
 KEYWORDS = ["flatten", "to_datetime"]
