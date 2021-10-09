@@ -1107,9 +1107,8 @@ inline bool is_ppt(const char* b, std::size_t len) {
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 &&
-           ((b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f') || memstr(b, len, "\x00ppt/", 5)))
-            return true;
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 || (b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f'))
+            return memstr(b, len, "\x00ppt/", 5) != NULL;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.presentation", 55) == 0)
             return true;
     }
@@ -2723,7 +2722,7 @@ extern "C" PyObject* nkf_guess_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = (unsigned char*)PyBytes_AS_STRING(o)) == NULL)
+    if((str = (unsigned char*)PyBytes_AsString(o)) == NULL)
         return NULL;
 
     res = pynkf_convert_guess(str, (int)PyObject_Length(o));
@@ -2816,7 +2815,7 @@ extern "C" PyObject* lookuptype_py(PyObject* self, PyObject* args) {
     const char *str, *res;
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = lookuptype(str, (std::size_t)PyObject_Length(o));
     if(res != NULL)
@@ -2832,7 +2831,7 @@ extern "C" PyObject* is_tar_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_tar(str);
     return PyBool_FromLong(res);
@@ -2845,7 +2844,7 @@ extern "C" PyObject* is_lha_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_lha(str);
     return PyBool_FromLong(res);
@@ -2858,7 +2857,7 @@ extern "C" PyObject* is_xls_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_xls(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
@@ -2870,7 +2869,7 @@ extern "C" PyObject* is_doc_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_doc(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
@@ -2882,7 +2881,7 @@ extern "C" PyObject* is_ppt_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_ppt(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
@@ -2894,7 +2893,7 @@ extern "C" PyObject* is_xml_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_xml(str);
     return PyBool_FromLong(res);
@@ -2906,7 +2905,7 @@ extern "C" PyObject* is_html_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_html(str);
     return PyBool_FromLong(res);
@@ -2918,7 +2917,7 @@ extern "C" PyObject* is_json_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_json(str);
     return PyBool_FromLong(res);
@@ -2930,7 +2929,7 @@ extern "C" PyObject* is_dml_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_dml(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
@@ -2942,7 +2941,7 @@ extern "C" PyObject* is_csv_py(PyObject* self, PyObject* args) {
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
-    if((str = PyBytes_AS_STRING(o)) == NULL)
+    if((str = PyBytes_AsString(o)) == NULL)
         return PyErr_Format(PyExc_ValueError, "Need bytes string.");
     res = is_csv(str, (std::size_t)PyObject_Length(o));
     return PyBool_FromLong(res);
