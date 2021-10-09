@@ -1136,10 +1136,66 @@ inline bool is_dml(const char* b, std::size_t len) {
     return false;
 }
 
-inline bool is_csv(const char* b, std::size_t len) {
-    if(const char* r = strchr(b, ','))
-        return strchr(r, '\n') != NULL;
-    return false;
+inline constexpr bool is_csv(const char* uc, std::size_t len) {
+    size_t nf = 0, tf = 0, nl = 0, eat = 0;
+    const char* ue = uc + len;
+    int quote = 0;
+
+    while(uc < ue) {
+        switch(*uc++) {
+            case '"':
+                // Eat until the matching quote
+
+                while(uc < ue) {
+                    char c = *uc++;
+                    if(c != '"') {
+                        // We already got one, done.
+                        if(quote) {
+                            --uc;
+                            ++eat;
+                            break;
+                        }
+                        continue;
+                    }
+                    if(quote) {
+                        // quote-quote escapes
+                        quote = 0;
+                        continue;
+                    }
+                    // first quote
+                    quote = 1;
+                }
+                if(eat == 0)
+                    uc = ue;
+                break;
+            case ',':
+            case '\t':
+            case ';':
+            case ' ':
+            case ':':
+            case '|':
+                nf++;
+                break;
+            case '\n':
+                // DPRINTF("%zu %zu %zu\n", nl, nf, tf);
+                nl++;
+                if(tf == 0) {
+                    // First time and no fields, give up
+                    if(nf == 0)
+                        return 0;
+                    // First time, set the number of fields
+                    tf = nf;
+                } else if(tf != nf) {
+                    // Field number mismatch, we are done.
+                    return 0;
+                }
+                nf = 0;
+                break;
+            default:
+                break;
+        }
+    }
+    return tf && nl > 2;
 }
 
 const char* lookuptype(const char* b, std::size_t len) {
