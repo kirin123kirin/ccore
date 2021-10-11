@@ -2,14 +2,14 @@
 #include <datetime.h>
 #include <setjmp.h>
 #include <array>
-#include <numeric>
-#include <string>
-#include <regex>
-#include <tuple>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
 #include <ctime>
+#include <numeric>
+#include <regex>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <direct.h>
@@ -93,13 +93,9 @@ struct PyMallocator {
         ;
     }
 
-    bool operator==(const PyMallocator<T>&) {
-        return true;
-    }
+    bool operator==(const PyMallocator<T>&) { return true; }
 
-    bool operator!=(const PyMallocator<T>&) {
-        return false;
-    }
+    bool operator!=(const PyMallocator<T>&) { return false; }
 };
 
 using py_ustring = std::basic_string<wchar_t, std::char_traits<wchar_t>, PyMallocator<wchar_t>>;
@@ -180,6 +176,10 @@ static std::unordered_map<char, std::vector<dic>> start = {
      {
          dic{"\x0a\x0d\x0d\x0a", "pcapng", 4},
      }},
+    {'\x0e',
+     {
+         dic{"\x0E\x03\x13\x01\x00", "hdf", 4},
+     }},
     {'\x1a',
      {
          dic{"\x1a\x45\xdf\xa3", "mkv", 4},
@@ -209,7 +209,7 @@ static std::unordered_map<char, std::vector<dic>> start = {
     {'\x25',
      {
          dic{"\x25\x21\x50\x53", "ps", 4},
-         dic{"\x25\x50\x44\x46\x2d", "pdf", 5},
+         dic{"\x25\x50\x44\x46", "pdf", 4},
      }},
     {'\x27',
      {
@@ -228,6 +228,7 @@ static std::unordered_map<char, std::vector<dic>> start = {
      {
          dic{"\x37\x48\x03\x02\x00\x00\x00\x00\x58\x35\x30\x39\x4b\x45\x59", "kdb", 15},
          dic{"\x37\x7a\xbc\xaf\x27\x1c", "7z", 6},
+         dic{"\x37\x80\x68\x70\x45", "pdf", 5},
      }},
     {'\x38',
      {
@@ -408,7 +409,7 @@ static std::unordered_map<char, std::vector<dic>> start = {
      }},
     {'\x89',
      {
-         dic{"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", "Image encoded in the Portable Network Graphics format", 8},
+         dic{"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", "png", 8},
          dic{"\x89\x48\x44\x46\x0d\x0a\x1a\x0a", "hdf5", 8},
      }},
     {'\x96',
@@ -504,11 +505,8 @@ static std::unordered_map<char, std::vector<reg>> regs = {
 
 template <typename T>
 struct nohash {
-    constexpr T operator()(const T& s) const noexcept {
-        return s;
-    }
+    constexpr T operator()(const T& s) const noexcept { return s; }
 };
-
 
 template <typename T>
 T replaceall(T& std1, T target_std, T change_std) {
@@ -530,11 +528,9 @@ T replaceall(T& std1, typename T::value_type target_std, typename T::value_type 
     return std1;
 }
 
-const char* memstr(const char* str, size_t str_size, 
-                   const char* target, size_t target_size) {
-
-    for (size_t i = 0; i != str_size - target_size; ++i) {
-        if (!memcmp(str + i, target, target_size)) {
+const char* memstr(const char* str, size_t str_size, const char* target, size_t target_size) {
+    for(size_t i = 0; i != str_size - target_size; ++i) {
+        if(!memcmp(str + i, target, target_size)) {
             return str + i;
         }
     }
@@ -594,7 +590,6 @@ static PyObject* pynkf_convert_guess(unsigned char* str, int strlen) {
     }
     return PyUnicode_FromString(input_codename);
 }
-
 
 int flatten(PyObject*& mapping, PyObject*& iterable) {
     PyObject *it, *item;
@@ -720,7 +715,8 @@ class Kansuji {
 
     /* Initialize */
     Kansuji() : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
-    Kansuji(std::nullptr_t) : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
+    Kansuji(std::nullptr_t)
+        : ucsdata(nullptr), data_(), fast_data_(), wk(), nums(), _reader(NULL), len((size_type)-1) {}
     Kansuji(const value_type* u, size_type _len) : ucsdata(u), _reader(NULL), len(_len) {
         if((len * 5) < ARRAY_LIMIT) {
             data_ = fast_data_;
@@ -1039,7 +1035,6 @@ const std::array<const Kansuji::value_type*, 18> Kansuji::D4_KURAI = {
     L"",   L"万", L"億", L"兆", L"京",     L"垓",     L"予",     L"穣",       L"溝",
     L"潤", L"正", L"載", L"極", L"恒河沙", L"阿僧祇", L"那由他", L"不可思議", L"無量大数"};
 
-
 inline bool isin(const char* b, std::size_t pos, const std::string& kw) {
     for(std::size_t i = 0, len = kw.size(); i < len; ++i) {
         if(b[i + pos] != kw[i])
@@ -1049,7 +1044,7 @@ inline bool isin(const char* b, std::size_t pos, const std::string& kw) {
 }
 
 inline bool is_tar(const char* b) {
-    if(memcmp(b + 257, "\x75\x73\x74\x61\x72", 5) == 0 && (b[262] == '\x00' || b[262] == '\x04'))
+    if(memcmp(b + 257, "\x75\x73\x74\x61\x72", 5) == 0)
         return true;
     return false;
 }
@@ -1063,10 +1058,12 @@ inline constexpr bool is_lha(const char* b) {
 inline bool is_xls(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         std::size_t s = (1U << (b[30] + b[31])) * (b[48] + b[49]) + 640U;
-        if(b[s] == '\x57' && b[s + 2] == '\x6f' && b[s + 4] == '\x72' && b[s + 6] == '\x6b' && b[s + 8] == '\x62' &&
-           b[s + 10] == '\x6f' && b[s + 12] == '\x6f' && b[s + 14] == '\x6b')
+        if(s > len)
+            return false;
+        if(b[s] == 'W' && b[s + 2] == 'o' && b[s + 4] == 'r' && b[s + 6] == 'k' && b[s + 8] == 'b' &&
+           b[s + 10] == 'o' && b[s + 12] == 'o' && b[s + 14] == 'k')
             return true;
-        if(b[s] == '\x42' && b[s + 2] == '\x6f' && b[s + 4] == '\x6f' && b[s + 6] == '\x6b')
+        if(b[s] == 'B' && b[s + 2] == 'o' && b[s + 4] == 'o' && b[s + 6] == 'k')
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
@@ -1098,16 +1095,19 @@ inline bool is_ppt(const char* b, std::size_t len) {
         if(b[512] == '\xec' && b[513] == '\xa5')
             return false;
         std::size_t s = (1U << (b[30] + b[31])) * (b[48] + b[49]) + 640U;
-        if(b[s] == '\x57' && b[s + 2] == '\x6f' && b[s + 4] == '\x72' && b[s + 6] == '\x6b' && b[s + 8] == '\x62' &&
-           b[s + 10] == '\x6f' && b[s + 12] == '\x6f' && b[s + 14] == '\x6b')
+        if(s > len)
             return false;
-        if(b[s] == '\x42' && b[s + 2] == '\x6f' && b[s + 4] == '\x6f' && b[s + 6] == '\x6b')
+        if(b[s] == 'W' && b[s + 2] == 'o' && b[s + 4] == 'r' && b[s + 6] == 'k' && b[s + 8] == 'b' &&
+           b[s + 10] == 'o' && b[s + 12] == 'o' && b[s + 14] == 'k')
+            return false;
+        if(b[s] == 'B' && b[s + 2] == 'o' && b[s + 4] == 'o' && b[s + 6] == 'k')
             return false;
         if(b[s])
             return true;
     }
     if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 || (b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f'))
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 ||
+           (b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f'))
             return memstr(b, len, "\x00ppt/", 5) != NULL;
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.presentation", 55) == 0)
             return true;
@@ -1136,7 +1136,8 @@ inline bool is_dml(const char* b, std::size_t len) {
     return false;
 }
 
-inline constexpr bool is_csv(const char* uc, std::size_t len) {
+template <char V>
+inline constexpr bool is_xsv(const char* uc, std::size_t len) {
     size_t nf = 0, tf = 0, nl = 0, eat = 0;
     const char* ue = uc + len;
     int quote = 0;
@@ -1168,12 +1169,7 @@ inline constexpr bool is_csv(const char* uc, std::size_t len) {
                 if(eat == 0)
                     uc = ue;
                 break;
-            case ',':
-            case '\t':
-            case ';':
-            case ' ':
-            case ':':
-            case '|':
+            case V:
                 nf++;
                 break;
             case '\n':
@@ -1189,6 +1185,8 @@ inline constexpr bool is_csv(const char* uc, std::size_t len) {
                     // Field number mismatch, we are done.
                     return 0;
                 }
+                if(nl == 3)
+                    return true;
                 nf = 0;
                 break;
             default:
@@ -1196,6 +1194,11 @@ inline constexpr bool is_csv(const char* uc, std::size_t len) {
         }
     }
     return tf && nl > 2;
+}
+
+inline constexpr bool is_csv(const char* b, std::size_t len) {
+    return is_xsv<','>(b, len) || is_xsv<'\t'>(b, len) || is_xsv<';'>(b, len) || is_xsv<'|'>(b, len) ||
+           is_xsv<':'>(b, len);
 }
 
 const char* lookuptype(const char* b, std::size_t len) {
@@ -1257,77 +1260,57 @@ const char* lookuptype(const char* b, std::size_t len) {
     return "txt";
 };
 
-static const std::unordered_map<wchar_t, int, nohash<wchar_t> > TRAN = {
-    {L'0', int(0)},    {L'1', int(1)},    {L'2', int(2)},    {L'3', int(3)},
-    {L'4', int(4)},    {L'5', int(5)},    {L'6', int(6)},    {L'7', int(7)},
-    {L'8', int(8)},    {L'9', int(9)},    {L'０', int(0)},   {L'１', int(1)},
-    {L'２', int(2)},   {L'３', int(3)},   {L'４', int(4)},   {L'５', int(5)},
-    {L'６', int(6)},   {L'７', int(7)},   {L'８', int(8)},   {L'９', int(9)},
-    {L'.', int(10)},   {L'．', int(10)},  {L'〇', int(0)},   {L'一', int(1)},
-    {L'二', int(2)},   {L'三', int(3)},   {L'四', int(4)},   {L'五', int(5)},
-    {L'六', int(6)},   {L'七', int(7)},   {L'八', int(8)},   {L'九', int(9)},
-    {L'十', int(11)},  {L'_', int(12)},   {L'＿', int(12)},  {L'-', int(13)},
-    {L'－', int(13)},  {L',', int(14)},   {L'，', int(14)},  {L'/', int(15)},
-    {L'／', int(15)},  {L'年', int(16)},  {L'元', int(17)},  {L'\'', int(18)},
-    {L'＇', int(18)},  {L'T', int(19)},   {L'Ｔ', int(19)},  {L'M', int(20)},
-    {L'Ｍ', int(20)},  {L'S', int(21)},   {L'Ｓ', int(21)},  {L'H', int(22)},
-    {L'Ｈ', int(22)},  {L'R', int(23)},   {L'Ｒ', int(23)},  {L'A', int(24)},
-    {L'Ａ', int(24)},  {L'N', int(25)},   {L'Ｎ', int(25)},  {L'D', int(26)},
-    {L'Ｄ', int(26)},  {L':', int(27)},   {L'：', int(27)},  {L'O', int(28)},
-    {L'Ｏ', int(28)},  {L'p', int(29)},   {L'ｐ', int(29)},  {L'正', int(30)},
-    {L'午', int(31)},  {L'後', int(32)},  {L'時', int(33)},  {L'前', int(34)},
-    {L'秒', int(35)},  {L'分', int(36)},  {L'日', int(37)},  {L'月', int(38)},
-    {L'曜', int(39)},  {L'火', int(40)},  {L'水', int(41)},  {L'木', int(42)},
-    {L'金', int(43)},  {L'土', int(44)},  {L'(', int(45)},   {L'（', int(45)},
-    {L')', int(46)},   {L'）', int(46)},  {L'e', int(47)},   {L'ｅ', int(47)},
-    {L'F', int(48)},   {L'Ｆ', int(48)},  {L'i', int(49)},   {L'ｉ', int(49)},
-    {L'u', int(50)},   {L'ｕ', int(50)},  {L'y', int(51)},   {L'ｙ', int(51)},
-    {L'W', int(52)},   {L'Ｗ', int(52)},  {L'b', int(53)},   {L'ｂ', int(53)},
-    {L'c', int(54)},   {L'ｃ', int(54)},  {L'g', int(55)},   {L'ｇ', int(55)},
-    {L'J', int(56)},   {L'Ｊ', int(56)},  {L'l', int(57)},   {L'ｌ', int(57)},
-    {L'v', int(58)},   {L'ｖ', int(58)},  {L'K', int(59)},   {L'Ｋ', int(59)},
-    {L'X', int(60)},   {L'Ｘ', int(60)},  {L'Z', int(61)},   {L'Ｚ', int(61)},
-    {L'+', int(62)},   {L'＋', int(62)},  {L'安', int(63)},  {L'雲', int(64)},
-    {L'永', int(65)},  {L'延', int(66)},  {L'応', int(67)},  {L'化', int(68)},
-    {L'嘉', int(69)},  {L'乾', int(70)},  {L'寛', int(71)},  {L'感', int(72)},
-    {L'観', int(73)},  {L'喜', int(74)},  {L'亀', int(75)},  {L'吉', int(76)},
-    {L'久', int(77)},  {L'亨', int(78)},  {L'享', int(79)},  {L'興', int(80)},
-    {L'慶', int(81)},  {L'景', int(82)},  {L'建', int(83)},  {L'護', int(84)},
-    {L'康', int(85)},  {L'弘', int(86)},  {L'衡', int(87)},  {L'国', int(88)},
-    {L'至', int(89)},  {L'字', int(90)},  {L'治', int(91)},  {L'朱', int(92)},
-    {L'寿', int(93)},  {L'授', int(94)},  {L'勝', int(95)},  {L'承', int(96)},
-    {L'昌', int(97)},  {L'昭', int(98)},  {L'祥', int(99)},  {L'神', int(100)},
-    {L'仁', int(101)}, {L'成', int(102)}, {L'政', int(103)}, {L'斉', int(104)},
-    {L'泰', int(105)}, {L'大', int(106)}, {L'中', int(107)}, {L'長', int(108)},
-    {L'鳥', int(109)}, {L'貞', int(110)}, {L'禎', int(111)}, {L'天', int(112)},
-    {L'同', int(113)}, {L'銅', int(114)}, {L'徳', int(115)}, {L'白', int(116)},
-    {L'武', int(117)}, {L'福', int(118)}, {L'文', int(119)}, {L'平', int(120)},
-    {L'保', int(121)}, {L'宝', int(122)}, {L'万', int(123)}, {L'明', int(124)},
-    {L'養', int(125)}, {L'令', int(126)}, {L'霊', int(127)}, {L'暦', int(128)},
-    {L'老', int(129)}, {L'禄', int(130)}, {L'和', int(131)}, {L'祚', int(132)},
-    {L'雉', int(133)}, {L't', int(19)},   {L'ｔ', int(19)},  {L'm', int(20)},
-    {L'ｍ', int(20)},  {L's', int(21)},   {L'ｓ', int(21)},  {L'h', int(22)},
-    {L'ｈ', int(22)},  {L'r', int(23)},   {L'ｒ', int(23)},  {L'a', int(24)},
-    {L'ａ', int(24)},  {L'n', int(25)},   {L'ｎ', int(25)},  {L'd', int(26)},
-    {L'ｄ', int(26)},  {L'o', int(28)},   {L'ｏ', int(28)},  {L'P', int(29)},
-    {L'Ｐ', int(29)},  {L'E', int(47)},   {L'Ｅ', int(47)},  {L'f', int(48)},
-    {L'ｆ', int(48)},  {L'I', int(49)},   {L'Ｉ', int(49)},  {L'U', int(50)},
-    {L'Ｕ', int(50)},  {L'Y', int(51)},   {L'Ｙ', int(51)},  {L'w', int(52)},
-    {L'ｗ', int(52)},  {L'B', int(53)},   {L'Ｂ', int(53)},  {L'C', int(54)},
-    {L'Ｃ', int(54)},  {L'G', int(55)},   {L'Ｇ', int(55)},  {L'j', int(56)},
-    {L'ｊ', int(56)},  {L'L', int(57)},   {L'Ｌ', int(57)},  {L'V', int(58)},
-    {L'Ｖ', int(58)},  {L'k', int(59)},   {L'ｋ', int(59)},  {L'x', int(60)},
-    {L'ｘ', int(60)},  {L'z', int(61)},   {L'ｚ', int(61)}};
+static const std::unordered_map<wchar_t, int, nohash<wchar_t>> TRAN = {
+    {L'0', int(0)},    {L'1', int(1)},    {L'2', int(2)},    {L'3', int(3)},    {L'4', int(4)},    {L'5', int(5)},
+    {L'6', int(6)},    {L'7', int(7)},    {L'8', int(8)},    {L'9', int(9)},    {L'０', int(0)},   {L'１', int(1)},
+    {L'２', int(2)},   {L'３', int(3)},   {L'４', int(4)},   {L'５', int(5)},   {L'６', int(6)},   {L'７', int(7)},
+    {L'８', int(8)},   {L'９', int(9)},   {L'.', int(10)},   {L'．', int(10)},  {L'〇', int(0)},   {L'一', int(1)},
+    {L'二', int(2)},   {L'三', int(3)},   {L'四', int(4)},   {L'五', int(5)},   {L'六', int(6)},   {L'七', int(7)},
+    {L'八', int(8)},   {L'九', int(9)},   {L'十', int(11)},  {L'_', int(12)},   {L'＿', int(12)},  {L'-', int(13)},
+    {L'－', int(13)},  {L',', int(14)},   {L'，', int(14)},  {L'/', int(15)},   {L'／', int(15)},  {L'年', int(16)},
+    {L'元', int(17)},  {L'\'', int(18)},  {L'＇', int(18)},  {L'T', int(19)},   {L'Ｔ', int(19)},  {L'M', int(20)},
+    {L'Ｍ', int(20)},  {L'S', int(21)},   {L'Ｓ', int(21)},  {L'H', int(22)},   {L'Ｈ', int(22)},  {L'R', int(23)},
+    {L'Ｒ', int(23)},  {L'A', int(24)},   {L'Ａ', int(24)},  {L'N', int(25)},   {L'Ｎ', int(25)},  {L'D', int(26)},
+    {L'Ｄ', int(26)},  {L':', int(27)},   {L'：', int(27)},  {L'O', int(28)},   {L'Ｏ', int(28)},  {L'p', int(29)},
+    {L'ｐ', int(29)},  {L'正', int(30)},  {L'午', int(31)},  {L'後', int(32)},  {L'時', int(33)},  {L'前', int(34)},
+    {L'秒', int(35)},  {L'分', int(36)},  {L'日', int(37)},  {L'月', int(38)},  {L'曜', int(39)},  {L'火', int(40)},
+    {L'水', int(41)},  {L'木', int(42)},  {L'金', int(43)},  {L'土', int(44)},  {L'(', int(45)},   {L'（', int(45)},
+    {L')', int(46)},   {L'）', int(46)},  {L'e', int(47)},   {L'ｅ', int(47)},  {L'F', int(48)},   {L'Ｆ', int(48)},
+    {L'i', int(49)},   {L'ｉ', int(49)},  {L'u', int(50)},   {L'ｕ', int(50)},  {L'y', int(51)},   {L'ｙ', int(51)},
+    {L'W', int(52)},   {L'Ｗ', int(52)},  {L'b', int(53)},   {L'ｂ', int(53)},  {L'c', int(54)},   {L'ｃ', int(54)},
+    {L'g', int(55)},   {L'ｇ', int(55)},  {L'J', int(56)},   {L'Ｊ', int(56)},  {L'l', int(57)},   {L'ｌ', int(57)},
+    {L'v', int(58)},   {L'ｖ', int(58)},  {L'K', int(59)},   {L'Ｋ', int(59)},  {L'X', int(60)},   {L'Ｘ', int(60)},
+    {L'Z', int(61)},   {L'Ｚ', int(61)},  {L'+', int(62)},   {L'＋', int(62)},  {L'安', int(63)},  {L'雲', int(64)},
+    {L'永', int(65)},  {L'延', int(66)},  {L'応', int(67)},  {L'化', int(68)},  {L'嘉', int(69)},  {L'乾', int(70)},
+    {L'寛', int(71)},  {L'感', int(72)},  {L'観', int(73)},  {L'喜', int(74)},  {L'亀', int(75)},  {L'吉', int(76)},
+    {L'久', int(77)},  {L'亨', int(78)},  {L'享', int(79)},  {L'興', int(80)},  {L'慶', int(81)},  {L'景', int(82)},
+    {L'建', int(83)},  {L'護', int(84)},  {L'康', int(85)},  {L'弘', int(86)},  {L'衡', int(87)},  {L'国', int(88)},
+    {L'至', int(89)},  {L'字', int(90)},  {L'治', int(91)},  {L'朱', int(92)},  {L'寿', int(93)},  {L'授', int(94)},
+    {L'勝', int(95)},  {L'承', int(96)},  {L'昌', int(97)},  {L'昭', int(98)},  {L'祥', int(99)},  {L'神', int(100)},
+    {L'仁', int(101)}, {L'成', int(102)}, {L'政', int(103)}, {L'斉', int(104)}, {L'泰', int(105)}, {L'大', int(106)},
+    {L'中', int(107)}, {L'長', int(108)}, {L'鳥', int(109)}, {L'貞', int(110)}, {L'禎', int(111)}, {L'天', int(112)},
+    {L'同', int(113)}, {L'銅', int(114)}, {L'徳', int(115)}, {L'白', int(116)}, {L'武', int(117)}, {L'福', int(118)},
+    {L'文', int(119)}, {L'平', int(120)}, {L'保', int(121)}, {L'宝', int(122)}, {L'万', int(123)}, {L'明', int(124)},
+    {L'養', int(125)}, {L'令', int(126)}, {L'霊', int(127)}, {L'暦', int(128)}, {L'老', int(129)}, {L'禄', int(130)},
+    {L'和', int(131)}, {L'祚', int(132)}, {L'雉', int(133)}, {L't', int(19)},   {L'ｔ', int(19)},  {L'm', int(20)},
+    {L'ｍ', int(20)},  {L's', int(21)},   {L'ｓ', int(21)},  {L'h', int(22)},   {L'ｈ', int(22)},  {L'r', int(23)},
+    {L'ｒ', int(23)},  {L'a', int(24)},   {L'ａ', int(24)},  {L'n', int(25)},   {L'ｎ', int(25)},  {L'd', int(26)},
+    {L'ｄ', int(26)},  {L'o', int(28)},   {L'ｏ', int(28)},  {L'P', int(29)},   {L'Ｐ', int(29)},  {L'E', int(47)},
+    {L'Ｅ', int(47)},  {L'f', int(48)},   {L'ｆ', int(48)},  {L'I', int(49)},   {L'Ｉ', int(49)},  {L'U', int(50)},
+    {L'Ｕ', int(50)},  {L'Y', int(51)},   {L'Ｙ', int(51)},  {L'w', int(52)},   {L'ｗ', int(52)},  {L'B', int(53)},
+    {L'Ｂ', int(53)},  {L'C', int(54)},   {L'Ｃ', int(54)},  {L'G', int(55)},   {L'Ｇ', int(55)},  {L'j', int(56)},
+    {L'ｊ', int(56)},  {L'L', int(57)},   {L'Ｌ', int(57)},  {L'V', int(58)},   {L'Ｖ', int(58)},  {L'k', int(59)},
+    {L'ｋ', int(59)},  {L'x', int(60)},   {L'ｘ', int(60)},  {L'z', int(61)},   {L'ｚ', int(61)}};
 
-static const std::unordered_set<wchar_t, nohash<wchar_t> > NUMBERS = {
+static const std::unordered_set<wchar_t, nohash<wchar_t>> NUMBERS = {
     L'0',  L'1',  L'2',  L'3',  L'4',  L'5',  L'6',  L'7',  L'8',  L'9',  L'０', L'１', L'２', L'３', L'４', L'５',
     L'６', L'７', L'８', L'９', L'〇', L'一', L'二', L'三', L'四', L'五', L'六', L'七', L'八', L'九', L'十'};
 
-static std::unordered_set<wchar_t, nohash<wchar_t> > VALIDATOR = {
-    L' ',  L'　', L'/', L'-', L'+', L':', L'.', L',', L'0',  L'1',  L'2',  L'3',  L'4',  L'5',  L'6',  L'7',  L'8',  L'9',  L'０',
-    L'１', L'２', L'３', L'４', L'５', L'６', L'７', L'８', L'９', L'〇', L'一', L'二', L'三',
-    L'四', L'五', L'六', L'七', L'八', L'九', L'十', L'年', L'月', L'日', L'時', L'分', L'秒',
-    L'A',  L'D',  L'F',  L'J',  L'M',  L'N',  L'O',  L'S',  L'T',  L'W',  L'S'};
+static std::unordered_set<wchar_t, nohash<wchar_t>> VALIDATOR = {
+    L' ',  L'　', L'/',  L'-',  L'+',  L':',  L'.',  L',',  L'0',  L'1',  L'2',  L'3',  L'4',  L'5',
+    L'6',  L'7',  L'8',  L'9',  L'０', L'１', L'２', L'３', L'４', L'５', L'６', L'７', L'８', L'９',
+    L'〇', L'一', L'二', L'三', L'四', L'五', L'六', L'七', L'八', L'九', L'十', L'年', L'月', L'日',
+    L'時', L'分', L'秒', L'A',  L'D',  L'F',  L'J',  L'M',  L'N',  L'O',  L'S',  L'T',  L'W',  L'S'};
 
 static int mkdir_p(const char* filepath) {
     char* p = NULL;
@@ -1373,8 +1356,6 @@ static int mkdir_p(const char* filepath) {
     free(buf);
     return 0;
 }
-
-
 
 template <std::size_t N>
 struct Trie {
@@ -1490,9 +1471,9 @@ struct Trie {
         char checkmagic[9] = "TRIEDATE";
 
 #if defined(_WIN32) || defined(_WIN64)
-            if(fopen_s(&fp, filepath, "rb") != 0)
+        if(fopen_s(&fp, filepath, "rb") != 0)
 #else
-            if((fp = fopen(filepath, "rb")) == NULL)
+        if((fp = fopen(filepath, "rb")) == NULL)
 #endif
             return (uint64_t)-1;
         if(fp == NULL)
@@ -1502,11 +1483,11 @@ struct Trie {
         if(r < 8 || magic[0] != 0 || strcmp(magic, checkmagic))
             return (uint64_t)-1;
 
-        if (fread(&len, sizeof(len), 1, fp) < 1)
+        if(fread(&len, sizeof(len), 1, fp) < 1)
             return (uint64_t)-1;
         nodes.resize(len + 1);
 
-        if (fread(&(nodes.data()[0]), sizeof(TrieNode), len, fp) < len)
+        if(fread(&(nodes.data()[0]), sizeof(TrieNode), len, fp) < len)
             return (uint64_t)-1;
 
         fclose(fp);
@@ -1537,7 +1518,7 @@ void insert(Trie<N>& NODE, std::wstring str, int value) {
             if(0x002f < s && s < 0x003a) {
                 kj = L"〇一二三四五六七八九"[s - 0x0030];
                 kansuji += kj;
-                if (value < 100)
+                if(value < 100)
                     kansuji_j = Kansuji::int2kanji((uint64_t)value);
 
             } else {
@@ -1589,192 +1570,148 @@ int builder_datetime(const char* dirpath) {
         {L"Saturday", L"Sat", L"土曜日", L"土曜", L"(土)", L"土"},
     };
 
-    static const std::vector<std::pair<std::wstring, int> > gengo = {
-        {L"令和", int(2019)},    {L"R.", int(2019)},      {L"R", int(2019)},
-        {L"令", int(2019)},      {L"平成", int(1989)},    {L"H.", int(1989)},
-        {L"H", int(1989)},       {L"平", int(1989)},      {L"昭和", int(1926)},
-        {L"S.", int(1926)},      {L"S", int(1926)},       {L"昭", int(1926)},
-        {L"大正", int(1912)},    {L"T.", int(1912)},      {L"T", int(1912)},
-        {L"大", int(1912)},      {L"明治", int(1868)},    {L"M.", int(1868)},
-        {L"M", int(1868)},       {L"明", int(1868)},      {L"慶応", int(1865)},
-        {L"元治", int(1864)},    {L"文久", int(1861)},    {L"万延", int(1860)},
-        {L"安政", int(1855)},    {L"嘉永", int(1848)},    {L"弘化", int(1845)},
-        {L"天保", int(1831)},    {L"文政", int(1818)},    {L"文化", int(1804)},
-        {L"享和", int(1801)},    {L"寛政", int(1789)},    {L"天明", int(1781)},
-        {L"安永", int(1772)},    {L"明和", int(1764)},    {L"宝暦", int(1751)},
-        {L"寛延", int(1748)},    {L"延享", int(1744)},    {L"寛保", int(1741)},
-        {L"元文", int(1736)},    {L"享保", int(1716)},    {L"正徳", int(1711)},
-        {L"宝永", int(1704)},    {L"元禄", int(1688)},    {L"貞享", int(1684)},
-        {L"天和", int(1681)},    {L"延宝", int(1673)},    {L"寛文", int(1661)},
-        {L"万治", int(1658)},    {L"明暦", int(1655)},    {L"承応", int(1652)},
-        {L"慶安", int(1648)},    {L"正保", int(1645)},    {L"寛永", int(1624)},
-        {L"元和", int(1615)},    {L"慶長", int(1596)},    {L"文禄", int(1593)},
-        {L"天正", int(1573)},    {L"元亀", int(1570)},    {L"永禄", int(1558)},
-        {L"弘治", int(1555)},    {L"天文", int(1532)},    {L"享禄", int(1528)},
-        {L"大永", int(1521)},    {L"永正", int(1504)},    {L"文亀", int(1501)},
-        {L"明応", int(1492)},    {L"延徳", int(1489)},    {L"長享", int(1487)},
-        {L"文明", int(1469)},    {L"応仁", int(1467)},    {L"文正", int(1466)},
-        {L"寛正", int(1461)},    {L"長禄", int(1457)},    {L"康正", int(1455)},
-        {L"享徳", int(1452)},    {L"宝徳", int(1449)},    {L"文安", int(1444)},
-        {L"嘉吉", int(1441)},    {L"永享", int(1429)},    {L"正長", int(1428)},
-        {L"応永", int(1394)},    {L"明徳", int(1390)},    {L"康応", int(1389)},
-        {L"嘉慶", int(1387)},    {L"至徳", int(1384)},    {L"永徳", int(1381)},
-        {L"康暦", int(1379)},    {L"永和", int(1375)},    {L"応安", int(1368)},
-        {L"貞治", int(1362)},    {L"康安", int(1361)},    {L"延文", int(1356)},
-        {L"文和", int(1352)},    {L"観応", int(1350)},    {L"貞和", int(1345)},
-        {L"康永", int(1342)},    {L"暦応", int(1338)},    {L"元中", int(1384)},
-        {L"弘和", int(1381)},    {L"天授", int(1375)},    {L"文中", int(1372)},
-        {L"建徳", int(1370)},    {L"正平", int(1347)},    {L"興国", int(1340)},
-        {L"延元", int(1336)},    {L"建武", int(1334)},    {L"正慶", int(1332)},
-        {L"元弘", int(1331)},    {L"元徳", int(1329)},    {L"嘉暦", int(1326)},
-        {L"正中", int(1324)},    {L"元亨", int(1321)},    {L"元応", int(1319)},
-        {L"文保", int(1317)},    {L"正和", int(1312)},    {L"応長", int(1311)},
-        {L"延慶", int(1308)},    {L"徳治", int(1307)},    {L"嘉元", int(1303)},
-        {L"乾元", int(1302)},    {L"正安", int(1299)},    {L"永仁", int(1293)},
-        {L"正応", int(1288)},    {L"弘安", int(1278)},    {L"建治", int(1275)},
-        {L"文永", int(1264)},    {L"弘長", int(1261)},    {L"文応", int(1260)},
-        {L"正元", int(1259)},    {L"正嘉", int(1257)},    {L"康元", int(1256)},
-        {L"建長", int(1249)},    {L"宝治", int(1247)},    {L"寛元", int(1243)},
-        {L"仁治", int(1240)},    {L"延応", int(1239)},    {L"暦仁", int(1238)},
-        {L"嘉禎", int(1235)},    {L"文暦", int(1234)},    {L"天福", int(1233)},
-        {L"貞永", int(1232)},    {L"寛喜", int(1229)},    {L"安貞", int(1228)},
-        {L"嘉禄", int(1225)},    {L"元仁", int(1224)},    {L"貞応", int(1222)},
-        {L"承久", int(1219)},    {L"建保", int(1214)},    {L"建暦", int(1211)},
-        {L"承元", int(1207)},    {L"建永", int(1206)},    {L"元久", int(1204)},
-        {L"建仁", int(1201)},    {L"正治", int(1199)},    {L"建久", int(1190)},
-        {L"文治", int(1185)},    {L"元暦", int(1184)},    {L"寿永", int(1182)},
-        {L"養和", int(1181)},    {L"治承", int(1177)},    {L"安元", int(1175)},
-        {L"承安", int(1171)},    {L"嘉応", int(1169)},    {L"仁安", int(1166)},
-        {L"永万", int(1165)},    {L"長寛", int(1163)},    {L"応保", int(1161)},
-        {L"永暦", int(1160)},    {L"平治", int(1159)},    {L"保元", int(1156)},
-        {L"久寿", int(1154)},    {L"仁平", int(1151)},    {L"久安", int(1145)},
-        {L"天養", int(1144)},    {L"康治", int(1142)},    {L"永治", int(1141)},
-        {L"保延", int(1135)},    {L"長承", int(1132)},    {L"天承", int(1131)},
-        {L"大治", int(1126)},    {L"天治", int(1124)},    {L"保安", int(1120)},
-        {L"元永", int(1118)},    {L"永久", int(1113)},    {L"天永", int(1110)},
-        {L"天仁", int(1108)},    {L"嘉承", int(1106)},    {L"長治", int(1104)},
-        {L"康和", int(1099)},    {L"承徳", int(1097)},    {L"永長", int(1097)},
-        {L"嘉保", int(1095)},    {L"寛治", int(1087)},    {L"応徳", int(1084)},
-        {L"永保", int(1081)},    {L"承暦", int(1077)},    {L"承保", int(1074)},
-        {L"延久", int(1069)},    {L"治暦", int(1065)},    {L"康平", int(1058)},
-        {L"天喜", int(1053)},    {L"永承", int(1046)},    {L"寛徳", int(1044)},
-        {L"長久", int(1040)},    {L"長暦", int(1037)},    {L"長元", int(1028)},
-        {L"万寿", int(1024)},    {L"治安", int(1021)},    {L"寛仁", int(1017)},
-        {L"長和", int(1013)},    {L"寛弘", int(1004)},    {L"長保", int(999)},
-        {L"長徳", int(995)},     {L"正暦", int(990)},     {L"永祚", int(989)},
-        {L"永延", int(987)},     {L"寛和", int(985)},     {L"永観", int(983)},
-        {L"天元", int(978)},     {L"貞元", int(976)},     {L"天延", int(974)},
-        {L"天禄", int(970)},     {L"安和", int(968)},     {L"康保", int(964)},
-        {L"応和", int(961)},     {L"天徳", int(957)},     {L"天暦", int(947)},
-        {L"天慶", int(938)},     {L"承平", int(931)},     {L"延長", int(923)},
-        {L"延喜", int(901)},     {L"昌泰", int(898)},     {L"寛平", int(889)},
-        {L"仁和", int(885)},     {L"元慶", int(877)},     {L"貞観", int(859)},
-        {L"天安", int(857)},     {L"斉衡", int(854)},     {L"仁寿", int(851)},
-        {L"嘉祥", int(848)},     {L"承和", int(834)},     {L"天長", int(824)},
-        {L"弘仁", int(810)},     {L"大同", int(806)},     {L"延暦", int(782)},
-        {L"天応", int(781)},     {L"宝亀", int(770)},     {L"神護景雲", int(767)},
-        {L"天平神護", int(765)}, {L"天平宝字", int(757)}, {L"天平勝宝", int(749)},
-        {L"天平感宝", int(749)}, {L"天平", int(729)},     {L"神亀", int(724)},
-        {L"養老", int(717)},     {L"霊亀", int(715)},     {L"和銅", int(708)},
-        {L"慶雲", int(704)},     {L"大宝", int(701)},     {L"朱鳥", int(686)},
-        {L"白雉", int(650)},     {L"大化", int(645)},
+    static const std::vector<std::pair<std::wstring, int>> gengo = {
+        {L"令和", int(2019)},    {L"R.", int(2019)},      {L"R", int(2019)},       {L"令", int(2019)},
+        {L"平成", int(1989)},    {L"H.", int(1989)},      {L"H", int(1989)},       {L"平", int(1989)},
+        {L"昭和", int(1926)},    {L"S.", int(1926)},      {L"S", int(1926)},       {L"昭", int(1926)},
+        {L"大正", int(1912)},    {L"T.", int(1912)},      {L"T", int(1912)},       {L"大", int(1912)},
+        {L"明治", int(1868)},    {L"M.", int(1868)},      {L"M", int(1868)},       {L"明", int(1868)},
+        {L"慶応", int(1865)},    {L"元治", int(1864)},    {L"文久", int(1861)},    {L"万延", int(1860)},
+        {L"安政", int(1855)},    {L"嘉永", int(1848)},    {L"弘化", int(1845)},    {L"天保", int(1831)},
+        {L"文政", int(1818)},    {L"文化", int(1804)},    {L"享和", int(1801)},    {L"寛政", int(1789)},
+        {L"天明", int(1781)},    {L"安永", int(1772)},    {L"明和", int(1764)},    {L"宝暦", int(1751)},
+        {L"寛延", int(1748)},    {L"延享", int(1744)},    {L"寛保", int(1741)},    {L"元文", int(1736)},
+        {L"享保", int(1716)},    {L"正徳", int(1711)},    {L"宝永", int(1704)},    {L"元禄", int(1688)},
+        {L"貞享", int(1684)},    {L"天和", int(1681)},    {L"延宝", int(1673)},    {L"寛文", int(1661)},
+        {L"万治", int(1658)},    {L"明暦", int(1655)},    {L"承応", int(1652)},    {L"慶安", int(1648)},
+        {L"正保", int(1645)},    {L"寛永", int(1624)},    {L"元和", int(1615)},    {L"慶長", int(1596)},
+        {L"文禄", int(1593)},    {L"天正", int(1573)},    {L"元亀", int(1570)},    {L"永禄", int(1558)},
+        {L"弘治", int(1555)},    {L"天文", int(1532)},    {L"享禄", int(1528)},    {L"大永", int(1521)},
+        {L"永正", int(1504)},    {L"文亀", int(1501)},    {L"明応", int(1492)},    {L"延徳", int(1489)},
+        {L"長享", int(1487)},    {L"文明", int(1469)},    {L"応仁", int(1467)},    {L"文正", int(1466)},
+        {L"寛正", int(1461)},    {L"長禄", int(1457)},    {L"康正", int(1455)},    {L"享徳", int(1452)},
+        {L"宝徳", int(1449)},    {L"文安", int(1444)},    {L"嘉吉", int(1441)},    {L"永享", int(1429)},
+        {L"正長", int(1428)},    {L"応永", int(1394)},    {L"明徳", int(1390)},    {L"康応", int(1389)},
+        {L"嘉慶", int(1387)},    {L"至徳", int(1384)},    {L"永徳", int(1381)},    {L"康暦", int(1379)},
+        {L"永和", int(1375)},    {L"応安", int(1368)},    {L"貞治", int(1362)},    {L"康安", int(1361)},
+        {L"延文", int(1356)},    {L"文和", int(1352)},    {L"観応", int(1350)},    {L"貞和", int(1345)},
+        {L"康永", int(1342)},    {L"暦応", int(1338)},    {L"元中", int(1384)},    {L"弘和", int(1381)},
+        {L"天授", int(1375)},    {L"文中", int(1372)},    {L"建徳", int(1370)},    {L"正平", int(1347)},
+        {L"興国", int(1340)},    {L"延元", int(1336)},    {L"建武", int(1334)},    {L"正慶", int(1332)},
+        {L"元弘", int(1331)},    {L"元徳", int(1329)},    {L"嘉暦", int(1326)},    {L"正中", int(1324)},
+        {L"元亨", int(1321)},    {L"元応", int(1319)},    {L"文保", int(1317)},    {L"正和", int(1312)},
+        {L"応長", int(1311)},    {L"延慶", int(1308)},    {L"徳治", int(1307)},    {L"嘉元", int(1303)},
+        {L"乾元", int(1302)},    {L"正安", int(1299)},    {L"永仁", int(1293)},    {L"正応", int(1288)},
+        {L"弘安", int(1278)},    {L"建治", int(1275)},    {L"文永", int(1264)},    {L"弘長", int(1261)},
+        {L"文応", int(1260)},    {L"正元", int(1259)},    {L"正嘉", int(1257)},    {L"康元", int(1256)},
+        {L"建長", int(1249)},    {L"宝治", int(1247)},    {L"寛元", int(1243)},    {L"仁治", int(1240)},
+        {L"延応", int(1239)},    {L"暦仁", int(1238)},    {L"嘉禎", int(1235)},    {L"文暦", int(1234)},
+        {L"天福", int(1233)},    {L"貞永", int(1232)},    {L"寛喜", int(1229)},    {L"安貞", int(1228)},
+        {L"嘉禄", int(1225)},    {L"元仁", int(1224)},    {L"貞応", int(1222)},    {L"承久", int(1219)},
+        {L"建保", int(1214)},    {L"建暦", int(1211)},    {L"承元", int(1207)},    {L"建永", int(1206)},
+        {L"元久", int(1204)},    {L"建仁", int(1201)},    {L"正治", int(1199)},    {L"建久", int(1190)},
+        {L"文治", int(1185)},    {L"元暦", int(1184)},    {L"寿永", int(1182)},    {L"養和", int(1181)},
+        {L"治承", int(1177)},    {L"安元", int(1175)},    {L"承安", int(1171)},    {L"嘉応", int(1169)},
+        {L"仁安", int(1166)},    {L"永万", int(1165)},    {L"長寛", int(1163)},    {L"応保", int(1161)},
+        {L"永暦", int(1160)},    {L"平治", int(1159)},    {L"保元", int(1156)},    {L"久寿", int(1154)},
+        {L"仁平", int(1151)},    {L"久安", int(1145)},    {L"天養", int(1144)},    {L"康治", int(1142)},
+        {L"永治", int(1141)},    {L"保延", int(1135)},    {L"長承", int(1132)},    {L"天承", int(1131)},
+        {L"大治", int(1126)},    {L"天治", int(1124)},    {L"保安", int(1120)},    {L"元永", int(1118)},
+        {L"永久", int(1113)},    {L"天永", int(1110)},    {L"天仁", int(1108)},    {L"嘉承", int(1106)},
+        {L"長治", int(1104)},    {L"康和", int(1099)},    {L"承徳", int(1097)},    {L"永長", int(1097)},
+        {L"嘉保", int(1095)},    {L"寛治", int(1087)},    {L"応徳", int(1084)},    {L"永保", int(1081)},
+        {L"承暦", int(1077)},    {L"承保", int(1074)},    {L"延久", int(1069)},    {L"治暦", int(1065)},
+        {L"康平", int(1058)},    {L"天喜", int(1053)},    {L"永承", int(1046)},    {L"寛徳", int(1044)},
+        {L"長久", int(1040)},    {L"長暦", int(1037)},    {L"長元", int(1028)},    {L"万寿", int(1024)},
+        {L"治安", int(1021)},    {L"寛仁", int(1017)},    {L"長和", int(1013)},    {L"寛弘", int(1004)},
+        {L"長保", int(999)},     {L"長徳", int(995)},     {L"正暦", int(990)},     {L"永祚", int(989)},
+        {L"永延", int(987)},     {L"寛和", int(985)},     {L"永観", int(983)},     {L"天元", int(978)},
+        {L"貞元", int(976)},     {L"天延", int(974)},     {L"天禄", int(970)},     {L"安和", int(968)},
+        {L"康保", int(964)},     {L"応和", int(961)},     {L"天徳", int(957)},     {L"天暦", int(947)},
+        {L"天慶", int(938)},     {L"承平", int(931)},     {L"延長", int(923)},     {L"延喜", int(901)},
+        {L"昌泰", int(898)},     {L"寛平", int(889)},     {L"仁和", int(885)},     {L"元慶", int(877)},
+        {L"貞観", int(859)},     {L"天安", int(857)},     {L"斉衡", int(854)},     {L"仁寿", int(851)},
+        {L"嘉祥", int(848)},     {L"承和", int(834)},     {L"天長", int(824)},     {L"弘仁", int(810)},
+        {L"大同", int(806)},     {L"延暦", int(782)},     {L"天応", int(781)},     {L"宝亀", int(770)},
+        {L"神護景雲", int(767)}, {L"天平神護", int(765)}, {L"天平宝字", int(757)}, {L"天平勝宝", int(749)},
+        {L"天平感宝", int(749)}, {L"天平", int(729)},     {L"神亀", int(724)},     {L"養老", int(717)},
+        {L"霊亀", int(715)},     {L"和銅", int(708)},     {L"慶雲", int(704)},     {L"大宝", int(701)},
+        {L"朱鳥", int(686)},     {L"白雉", int(650)},     {L"大化", int(645)},
     };
 
     static wchar_t ymdsep[] = {0, L'/', L'-', L'_', L'.', L','};
     static wchar_t hmssep[] = {0, L':', L'_', L'.'};
     static const std::wstring half[] = {L"am", L"pm",  L"a.m", L"p.m",  L"a.m.", L"p.m.", L"AM",
-                          L"PM", L"A.M", L"P.M", L"A.M.", L"P.M.", L"午前", L"午後"};
-    static const std::vector<std::pair<std::wstring, int> > tzone = {
-        {L"ACDT", int(37800)},      {L"ACST", int(34200)},      {L"ACT", int(-18000)},
-        {L"ACWST", int(31500)},     {L"ADT", int(-10800)},      {L"AEDT", int(39600)},
-        {L"AEST", int(36000)},      {L"AFT", int(16200)},       {L"AKDT", int(-28800)},
-        {L"AKST", int(-32400)},     {L"AMST", int(-10800)},     {L"AMT", int(-14400)},
-        {L"AMT", int(14400)},       {L"ART", int(-10800)},      {L"AST", int(-14400)},
-        {L"AST", int(10800)},       {L"AT", int(-14400)},       {L"AWST", int(28800)},
-        {L"AZOST", int(0)},         {L"AZOT", int(-3600)},      {L"AZT", int(14400)},
-        {L"BDT", int(28800)},       {L"BNT", int(28800)},       {L"BOT", int(-14400)},
-        {L"BRST", int(-7200)},      {L"BRT", int(-10800)},      {L"BST", int(21600)},
-        {L"BST", int(3600)},        {L"BTT", int(21600)},       {L"CAT", int(7200)},
-        {L"CCT", int(23400)},       {L"CDT", int(-14400)},      {L"CDT", int(-18000)},
-        {L"CEST", int(7200)},       {L"CET", int(3600)},        {L"CHADT", int(49500)},
-        {L"CHAST", int(45900)},     {L"CHOST", int(32400)},     {L"CHOT", int(28800)},
-        {L"CHST", int(36000)},      {L"CHUT", int(36000)},      {L"CIT", int(28800)},
-        {L"CKT", int(-36000)},      {L"CLST", int(-10800)},     {L"CLT", int(-14400)},
-        {L"COST", int(-14400)},     {L"COT", int(-18000)},      {L"CST", int(-18000)},
-        {L"CST", int(-21600)},      {L"CST", int(28800)},       {L"CT", int(-21600)},
-        {L"CVT", int(-3600)},       {L"CXT", int(25200)},       {L"DAVT", int(25200)},
-        {L"DDUT", int(36000)},      {L"EASST", int(-18000)},    {L"EAST", int(-21600)},
-        {L"EAT", int(10800)},       {L"ECT", int(-18000)},      {L"EDT", int(-14400)},
-        {L"EEST", int(10800)},      {L"EET", int(7200)},        {L"EGST", int(0)},
-        {L"EGT", int(-3600)},       {L"EIT", int(32400)},       {L"EST", int(-18000)},
-        {L"ET", int(-18000)},       {L"FET", int(10800)},       {L"FJT", int(43200)},
-        {L"FKST", int(-10800)},     {L"FKT", int(-14400)},      {L"FNT", int(-7200)},
-        {L"GALT", int(-21600)},     {L"GAMT", int(-32400)},     {L"GET", int(14400)},
-        {L"GFT", int(-10800)},      {L"GILT", int(43200)},      {L"GIT", int(-32400)},
-        {L"GMT", int(0)},           {L"GMT+0", int(0)},         {L"GMT+1", int(3600)},
-        {L"GMT+10", int(36000)},    {L"GMT+10:30", int(37800)}, {L"GMT+11", int(39600)},
-        {L"GMT+12", int(43200)},    {L"GMT+12:45", int(45900)}, {L"GMT+13", int(46800)},
-        {L"GMT+13:45", int(49500)}, {L"GMT+14", int(50400)},    {L"GMT+2", int(7200)},
-        {L"GMT+3", int(10800)},     {L"GMT+3:30", int(12600)},  {L"GMT+4", int(14400)},
-        {L"GMT+4:30", int(16200)},  {L"GMT+5", int(18000)},     {L"GMT+5:30", int(19800)},
-        {L"GMT+5:45", int(20700)},  {L"GMT+6", int(21600)},     {L"GMT+6:30", int(23400)},
-        {L"GMT+7", int(25200)},     {L"GMT+8", int(28800)},     {L"GMT+8:45", int(31500)},
-        {L"GMT+9", int(32400)},     {L"GMT+9:30", int(34200)},  {L"GMT-1", int(-3600)},
-        {L"GMT-10", int(-36000)},   {L"GMT-11", int(-39600)},   {L"GMT-2", int(-7200)},
-        {L"GMT-2:30", int(-9000)},  {L"GMT-3", int(-10800)},    {L"GMT-3:30", int(-12600)},
-        {L"GMT-4", int(-14400)},    {L"GMT-5", int(-18000)},    {L"GMT-6", int(-21600)},
-        {L"GMT-7", int(-25200)},    {L"GMT-8", int(-28800)},    {L"GMT-9", int(-32400)},
-        {L"GMT-9:30", int(-34200)}, {L"GST", int(-7200)},       {L"GST", int(14400)},
-        {L"GYT", int(-14400)},      {L"HADT", int(-32400)},     {L"HAST", int(-36000)},
-        {L"HKT", int(28800)},       {L"HOVST", int(28800)},     {L"HOVT", int(25200)},
-        {L"ICT", int(25200)},       {L"IDT", int(10800)},       {L"IRDT", int(16200)},
-        {L"IRKT", int(28800)},      {L"IRST", int(12600)},      {L"IST", int(19800)},
-        {L"IST", int(3600)},        {L"IST", int(7200)},        {L"JST", int(32400)},
-        {L"KGT", int(21600)},       {L"KOST", int(39600)},      {L"KRAT", int(25200)},
-        {L"KST", int(32400)},       {L"LHDT", int(39600)},      {L"LHST", int(37800)},
-        {L"LINT", int(50400)},      {L"MAGT", int(39600)},      {L"MART", int(-34200)},
-        {L"MAWT", int(18000)},      {L"MDT", int(-21600)},      {L"MHT", int(43200)},
-        {L"MIST", int(39600)},      {L"MIT", int(-34200)},      {L"MMT", int(23400)},
-        {L"MSK", int(10800)},       {L"MST", int(-25200)},      {L"MST", int(28800)},
-        {L"MT", int(-25200)},       {L"MUT", int(14400)},       {L"MVT", int(18000)},
-        {L"MYT", int(28800)},       {L"NCT", int(39600)},       {L"NDT", int(-9000)},
-        {L"NFT", int(39600)},       {L"NPT", int(20700)},       {L"NRT", int(43200)},
-        {L"NST", int(-12600)},      {L"NT", int(-12600)},       {L"NUT", int(-39600)},
-        {L"NZDT", int(46800)},      {L"NZST", int(43200)},      {L"OMST", int(21600)},
-        {L"ORAT", int(18000)},      {L"PDT", int(-25200)},      {L"PET", int(-18000)},
-        {L"PETT", int(43200)},      {L"PGT", int(36000)},       {L"PHOT", int(46800)},
-        {L"PHT", int(28800)},       {L"PKT", int(18000)},       {L"PMDT", int(-7200)},
-        {L"PMST", int(-10800)},     {L"PONT", int(39600)},      {L"PST", int(-28800)},
-        {L"PST", int(28800)},       {L"PT", int(-28800)},       {L"PWT", int(32400)},
-        {L"PYST", int(-10800)},     {L"PYT", int(-14400)},      {L"RET", int(14400)},
-        {L"ROTT", int(-10800)},     {L"SAKT", int(39600)},      {L"SAMT", int(14400)},
-        {L"SAST", int(7200)},       {L"SBT", int(39600)},       {L"SCT", int(14400)},
-        {L"SGT", int(28800)},       {L"SLST", int(19800)},      {L"SRT", int(-10800)},
-        {L"SST", int(-39600)},      {L"SYOT", int(10800)},      {L"TAHT", int(-36000)},
-        {L"TFT", int(18000)},       {L"THA", int(25200)},       {L"TJT", int(18000)},
-        {L"TKT", int(46800)},       {L"TLT", int(32400)},       {L"TMT", int(18000)},
-        {L"TOT", int(46800)},       {L"TRT", int(10800)},       {L"TVT", int(43200)},
-        {L"ULAST", int(32400)},     {L"ULAT", int(28800)},      {L"USZ1", int(7200)},
-        {L"UTC", int(0)},           {L"UTC+0", int(0)},         {L"UTC+1", int(3600)},
-        {L"UTC+10", int(36000)},    {L"UTC+10:30", int(37800)}, {L"UTC+11", int(39600)},
-        {L"UTC+12", int(43200)},    {L"UTC+12:45", int(45900)}, {L"UTC+13", int(46800)},
-        {L"UTC+13:45", int(49500)}, {L"UTC+14", int(50400)},    {L"UTC+2", int(7200)},
-        {L"UTC+3", int(10800)},     {L"UTC+3:30", int(12600)},  {L"UTC+4", int(14400)},
-        {L"UTC+4:30", int(16200)},  {L"UTC+5", int(18000)},     {L"UTC+5:30", int(19800)},
-        {L"UTC+5:45", int(20700)},  {L"UTC+6", int(21600)},     {L"UTC+6:30", int(23400)},
-        {L"UTC+7", int(25200)},     {L"UTC+8", int(28800)},     {L"UTC+8:45", int(31500)},
-        {L"UTC+9", int(32400)},     {L"UTC+9:30", int(34200)},  {L"UTC-1", int(-3600)},
-        {L"UTC-10", int(-36000)},   {L"UTC-11", int(-39600)},   {L"UTC-2", int(-7200)},
-        {L"UTC-2:30", int(-5400)},  {L"UTC-3", int(-10800)},    {L"UTC-3:30", int(-9000)},
-        {L"UTC-4", int(-14400)},    {L"UTC-5", int(-18000)},    {L"UTC-6", int(-21600)},
-        {L"UTC-7", int(-25200)},    {L"UTC-8", int(-28800)},    {L"UTC-9", int(-32400)},
-        {L"UTC-9:30", int(-30600)}, {L"UYST", int(-7200)},      {L"UYT", int(-10800)},
-        {L"UZT", int(18000)},       {L"VET", int(-14400)},      {L"VLAT", int(36000)},
-        {L"VOLT", int(14400)},      {L"VOST", int(21600)},      {L"VUT", int(39600)},
-        {L"WAKT", int(43200)},      {L"WAST", int(7200)},       {L"WAT", int(3600)},
-        {L"WEST", int(3600)},       {L"WET", int(0)},           {L"WFT", int(43200)},
-        {L"WGST", int(-10800)},     {L"WGST", int(-7200)},      {L"WIB", int(25200)},
-        {L"WIT", int(32400)},       {L"YAKT", int(32400)},      {L"YEKT", int(18000)},
+                                        L"PM", L"A.M", L"P.M", L"A.M.", L"P.M.", L"午前", L"午後"};
+    static const std::vector<std::pair<std::wstring, int>> tzone = {
+        {L"ACDT", int(37800)},     {L"ACST", int(34200)},      {L"ACT", int(-18000)},      {L"ACWST", int(31500)},
+        {L"ADT", int(-10800)},     {L"AEDT", int(39600)},      {L"AEST", int(36000)},      {L"AFT", int(16200)},
+        {L"AKDT", int(-28800)},    {L"AKST", int(-32400)},     {L"AMST", int(-10800)},     {L"AMT", int(-14400)},
+        {L"AMT", int(14400)},      {L"ART", int(-10800)},      {L"AST", int(-14400)},      {L"AST", int(10800)},
+        {L"AT", int(-14400)},      {L"AWST", int(28800)},      {L"AZOST", int(0)},         {L"AZOT", int(-3600)},
+        {L"AZT", int(14400)},      {L"BDT", int(28800)},       {L"BNT", int(28800)},       {L"BOT", int(-14400)},
+        {L"BRST", int(-7200)},     {L"BRT", int(-10800)},      {L"BST", int(21600)},       {L"BST", int(3600)},
+        {L"BTT", int(21600)},      {L"CAT", int(7200)},        {L"CCT", int(23400)},       {L"CDT", int(-14400)},
+        {L"CDT", int(-18000)},     {L"CEST", int(7200)},       {L"CET", int(3600)},        {L"CHADT", int(49500)},
+        {L"CHAST", int(45900)},    {L"CHOST", int(32400)},     {L"CHOT", int(28800)},      {L"CHST", int(36000)},
+        {L"CHUT", int(36000)},     {L"CIT", int(28800)},       {L"CKT", int(-36000)},      {L"CLST", int(-10800)},
+        {L"CLT", int(-14400)},     {L"COST", int(-14400)},     {L"COT", int(-18000)},      {L"CST", int(-18000)},
+        {L"CST", int(-21600)},     {L"CST", int(28800)},       {L"CT", int(-21600)},       {L"CVT", int(-3600)},
+        {L"CXT", int(25200)},      {L"DAVT", int(25200)},      {L"DDUT", int(36000)},      {L"EASST", int(-18000)},
+        {L"EAST", int(-21600)},    {L"EAT", int(10800)},       {L"ECT", int(-18000)},      {L"EDT", int(-14400)},
+        {L"EEST", int(10800)},     {L"EET", int(7200)},        {L"EGST", int(0)},          {L"EGT", int(-3600)},
+        {L"EIT", int(32400)},      {L"EST", int(-18000)},      {L"ET", int(-18000)},       {L"FET", int(10800)},
+        {L"FJT", int(43200)},      {L"FKST", int(-10800)},     {L"FKT", int(-14400)},      {L"FNT", int(-7200)},
+        {L"GALT", int(-21600)},    {L"GAMT", int(-32400)},     {L"GET", int(14400)},       {L"GFT", int(-10800)},
+        {L"GILT", int(43200)},     {L"GIT", int(-32400)},      {L"GMT", int(0)},           {L"GMT+0", int(0)},
+        {L"GMT+1", int(3600)},     {L"GMT+10", int(36000)},    {L"GMT+10:30", int(37800)}, {L"GMT+11", int(39600)},
+        {L"GMT+12", int(43200)},   {L"GMT+12:45", int(45900)}, {L"GMT+13", int(46800)},    {L"GMT+13:45", int(49500)},
+        {L"GMT+14", int(50400)},   {L"GMT+2", int(7200)},      {L"GMT+3", int(10800)},     {L"GMT+3:30", int(12600)},
+        {L"GMT+4", int(14400)},    {L"GMT+4:30", int(16200)},  {L"GMT+5", int(18000)},     {L"GMT+5:30", int(19800)},
+        {L"GMT+5:45", int(20700)}, {L"GMT+6", int(21600)},     {L"GMT+6:30", int(23400)},  {L"GMT+7", int(25200)},
+        {L"GMT+8", int(28800)},    {L"GMT+8:45", int(31500)},  {L"GMT+9", int(32400)},     {L"GMT+9:30", int(34200)},
+        {L"GMT-1", int(-3600)},    {L"GMT-10", int(-36000)},   {L"GMT-11", int(-39600)},   {L"GMT-2", int(-7200)},
+        {L"GMT-2:30", int(-9000)}, {L"GMT-3", int(-10800)},    {L"GMT-3:30", int(-12600)}, {L"GMT-4", int(-14400)},
+        {L"GMT-5", int(-18000)},   {L"GMT-6", int(-21600)},    {L"GMT-7", int(-25200)},    {L"GMT-8", int(-28800)},
+        {L"GMT-9", int(-32400)},   {L"GMT-9:30", int(-34200)}, {L"GST", int(-7200)},       {L"GST", int(14400)},
+        {L"GYT", int(-14400)},     {L"HADT", int(-32400)},     {L"HAST", int(-36000)},     {L"HKT", int(28800)},
+        {L"HOVST", int(28800)},    {L"HOVT", int(25200)},      {L"ICT", int(25200)},       {L"IDT", int(10800)},
+        {L"IRDT", int(16200)},     {L"IRKT", int(28800)},      {L"IRST", int(12600)},      {L"IST", int(19800)},
+        {L"IST", int(3600)},       {L"IST", int(7200)},        {L"JST", int(32400)},       {L"KGT", int(21600)},
+        {L"KOST", int(39600)},     {L"KRAT", int(25200)},      {L"KST", int(32400)},       {L"LHDT", int(39600)},
+        {L"LHST", int(37800)},     {L"LINT", int(50400)},      {L"MAGT", int(39600)},      {L"MART", int(-34200)},
+        {L"MAWT", int(18000)},     {L"MDT", int(-21600)},      {L"MHT", int(43200)},       {L"MIST", int(39600)},
+        {L"MIT", int(-34200)},     {L"MMT", int(23400)},       {L"MSK", int(10800)},       {L"MST", int(-25200)},
+        {L"MST", int(28800)},      {L"MT", int(-25200)},       {L"MUT", int(14400)},       {L"MVT", int(18000)},
+        {L"MYT", int(28800)},      {L"NCT", int(39600)},       {L"NDT", int(-9000)},       {L"NFT", int(39600)},
+        {L"NPT", int(20700)},      {L"NRT", int(43200)},       {L"NST", int(-12600)},      {L"NT", int(-12600)},
+        {L"NUT", int(-39600)},     {L"NZDT", int(46800)},      {L"NZST", int(43200)},      {L"OMST", int(21600)},
+        {L"ORAT", int(18000)},     {L"PDT", int(-25200)},      {L"PET", int(-18000)},      {L"PETT", int(43200)},
+        {L"PGT", int(36000)},      {L"PHOT", int(46800)},      {L"PHT", int(28800)},       {L"PKT", int(18000)},
+        {L"PMDT", int(-7200)},     {L"PMST", int(-10800)},     {L"PONT", int(39600)},      {L"PST", int(-28800)},
+        {L"PST", int(28800)},      {L"PT", int(-28800)},       {L"PWT", int(32400)},       {L"PYST", int(-10800)},
+        {L"PYT", int(-14400)},     {L"RET", int(14400)},       {L"ROTT", int(-10800)},     {L"SAKT", int(39600)},
+        {L"SAMT", int(14400)},     {L"SAST", int(7200)},       {L"SBT", int(39600)},       {L"SCT", int(14400)},
+        {L"SGT", int(28800)},      {L"SLST", int(19800)},      {L"SRT", int(-10800)},      {L"SST", int(-39600)},
+        {L"SYOT", int(10800)},     {L"TAHT", int(-36000)},     {L"TFT", int(18000)},       {L"THA", int(25200)},
+        {L"TJT", int(18000)},      {L"TKT", int(46800)},       {L"TLT", int(32400)},       {L"TMT", int(18000)},
+        {L"TOT", int(46800)},      {L"TRT", int(10800)},       {L"TVT", int(43200)},       {L"ULAST", int(32400)},
+        {L"ULAT", int(28800)},     {L"USZ1", int(7200)},       {L"UTC", int(0)},           {L"UTC+0", int(0)},
+        {L"UTC+1", int(3600)},     {L"UTC+10", int(36000)},    {L"UTC+10:30", int(37800)}, {L"UTC+11", int(39600)},
+        {L"UTC+12", int(43200)},   {L"UTC+12:45", int(45900)}, {L"UTC+13", int(46800)},    {L"UTC+13:45", int(49500)},
+        {L"UTC+14", int(50400)},   {L"UTC+2", int(7200)},      {L"UTC+3", int(10800)},     {L"UTC+3:30", int(12600)},
+        {L"UTC+4", int(14400)},    {L"UTC+4:30", int(16200)},  {L"UTC+5", int(18000)},     {L"UTC+5:30", int(19800)},
+        {L"UTC+5:45", int(20700)}, {L"UTC+6", int(21600)},     {L"UTC+6:30", int(23400)},  {L"UTC+7", int(25200)},
+        {L"UTC+8", int(28800)},    {L"UTC+8:45", int(31500)},  {L"UTC+9", int(32400)},     {L"UTC+9:30", int(34200)},
+        {L"UTC-1", int(-3600)},    {L"UTC-10", int(-36000)},   {L"UTC-11", int(-39600)},   {L"UTC-2", int(-7200)},
+        {L"UTC-2:30", int(-5400)}, {L"UTC-3", int(-10800)},    {L"UTC-3:30", int(-9000)},  {L"UTC-4", int(-14400)},
+        {L"UTC-5", int(-18000)},   {L"UTC-6", int(-21600)},    {L"UTC-7", int(-25200)},    {L"UTC-8", int(-28800)},
+        {L"UTC-9", int(-32400)},   {L"UTC-9:30", int(-30600)}, {L"UYST", int(-7200)},      {L"UYT", int(-10800)},
+        {L"UZT", int(18000)},      {L"VET", int(-14400)},      {L"VLAT", int(36000)},      {L"VOLT", int(14400)},
+        {L"VOST", int(21600)},     {L"VUT", int(39600)},       {L"WAKT", int(43200)},      {L"WAST", int(7200)},
+        {L"WAT", int(3600)},       {L"WEST", int(3600)},       {L"WET", int(0)},           {L"WFT", int(43200)},
+        {L"WGST", int(-10800)},    {L"WGST", int(-7200)},      {L"WIB", int(25200)},       {L"WIT", int(32400)},
+        {L"YAKT", int(32400)},     {L"YEKT", int(18000)},
     };
 
     ymdsep[0] = L'年';
@@ -1960,7 +1897,7 @@ int builder_datetime(const char* dirpath) {
                 sm = L'0' + std::to_wstring(m);
             else
                 sm = std::to_wstring(m);
-            
+
             int sec = 60 * ((60 * v) + m);
             insert(ZZ, L'+' + st + sm, sec);
             insert(ZZ, L'-' + st + sm, -1 * sec);
@@ -2025,7 +1962,6 @@ int builder_datetime(const char* dirpath) {
 }
 
 int loader_datetime(const char* dirpath) {
-
 #if defined(_WIN32) || defined(_WIN64)
     std::size_t len = strnlen_s(dirpath, 255);
 #else
@@ -2081,7 +2017,7 @@ int loader_datetime(const char* dirpath) {
 
         for(std::size_t i = 0; i < _len; i++) {
             wchar_t s = 0;
-            if (fread(&s, sz, 1, fp) < 1)
+            if(fread(&s, sz, 1, fp) < 1)
                 return -1;
             if(VALIDATOR.find(s) == VALIDATOR.end())
                 VALIDATOR.insert(s);
@@ -2216,12 +2152,8 @@ struct datetime {
         return microsec == 0 && sec == 0 && min == 0 && hour == 0 && day == 0 && month == 0 && year == 0 &&
                offset == -1 && noon == 0 && tzname.empty();
     }
-    bool operator!=(datetime& other) {
-        return !operator==(other);
-    }
-    bool operator!=(std::nullptr_t) {
-        return !operator==(nullptr);
-    }
+    bool operator!=(datetime& other) { return !operator==(other); }
+    bool operator!=(std::nullptr_t) { return !operator==(nullptr); }
 
     template <typename... Tp>
     constexpr std::array<int, 9> triefind(const std::wstring& str, std::tuple<Tp...> NODES) noexcept {
@@ -2245,7 +2177,7 @@ struct datetime {
             uint64_t j = i;
             ret[8] = _find(str, &i, std::get<8>(NODES));
             tzname.clear();
-            if(i - j < 3){
+            if(i - j < 3) {
                 ret[8] = -1;
                 return ret;
             }
@@ -2517,7 +2449,6 @@ datetime parse_datetime(const std::wstring& str, const bool dayfirst = false) no
     return nullptr;
 }
 
-
 datetime to_datetime(const std::wstring& str, const bool dayfirst = false, const uint64_t minlimit = 3) {
     const_datetime();
     uint64_t i = 0, j = 0, k = 0, c = 0, beg = 0, last = 0;
@@ -2527,7 +2458,7 @@ datetime to_datetime(const std::wstring& str, const bool dayfirst = false, const
     bool isbothkako = false;
     const uint64_t len_2 = str.size() - 2;
 
-    for(auto&& s = str.cbegin(), end = str.cend() + 1; s != end; ++s, ++j) {
+    for(auto &&s = str.cbegin(), end = str.cend() + 1; s != end; ++s, ++j) {
         if(*s == L'(' || *s == L')' || *s == L'（' || *s == L'）') {
             ps = TRAN.at(*s);
             ww = 0;
@@ -2562,7 +2493,7 @@ datetime to_datetime(const std::wstring& str, const bool dayfirst = false, const
             last = j;
 
             for(k = j - 1; k > beg || k == 0; --k) {
-                if (k == (std::size_t)-1)
+                if(k == (std::size_t)-1)
                     break;
                 ts = str[k];
                 if(c == 0 && (ts == L' ' || ts == L'–' || ts == L'-' || ts == L'_')) {
@@ -2589,7 +2520,7 @@ PyObject* extractdate(const std::wstring& str, const bool dayfirst = false, cons
     bool isbothkako = false;
     const uint64_t len_2 = str.size() - 2;
 
-    for(auto&& s = str.begin(), end = str.end() + 1; s != end; ++s, ++j) {
+    for(auto &&s = str.begin(), end = str.end() + 1; s != end; ++s, ++j) {
         if(*s == L'(' || *s == L')' || *s == L'（' || *s == L'）') {
             ps = TRAN.at(*s);
             ww = 0;
@@ -2649,11 +2580,10 @@ PyObject* extractdate(const std::wstring& str, const bool dayfirst = false, cons
     return ret;
 }
 
-
 std::wstring normalized_datetime(const std::wstring& str,
-                                const wchar_t* format = L"%Y/%m/%d %H:%M:%S",
-                                const bool dayfirst = false,
-                                const uint64_t minlimit = 3) {
+                                 const wchar_t* format = L"%Y/%m/%d %H:%M:%S",
+                                 const bool dayfirst = false,
+                                 const uint64_t minlimit = 3) {
     const_datetime();
     uint64_t i = 0, j = 0, k = 0, t = 0, c = 0, beg = 0, last = 0;
     int ps = 0, ww = 0;
@@ -2663,7 +2593,7 @@ std::wstring normalized_datetime(const std::wstring& str,
     bool isbothkako = false;
     const uint64_t len_2 = str.size() - 2;
 
-    for(auto&& s = str.cbegin(), end = str.cend() + 1; s != end; ++s, ++j) {
+    for(auto &&s = str.cbegin(), end = str.cend() + 1; s != end; ++s, ++j) {
         if(i == 0)
             t = j;
 
@@ -2803,7 +2733,6 @@ extern "C" PyObject* to_hankaku_py(PyObject* self, PyObject* args) {
         return str;
     auto&& res = to_hankaku(wdat, (std::size_t)len);
     PyMem_Free(wdat);
-
 
     if(!res.empty())
         return PyUnicode_FromWideChar(res.data(), (Py_ssize_t)res.size());
@@ -3003,7 +2932,6 @@ extern "C" PyObject* is_csv_py(PyObject* self, PyObject* args) {
     return PyBool_FromLong(res);
 }
 
-
 extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kwargs) {
     PyObject* o;
     wchar_t* str;
@@ -3018,21 +2946,23 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
 
     if(PyDate_Check(o))
         return o;
-    else if (!PyUnicode_Check(o))
+    else if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
     if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
-    
+
     res = to_datetime(str, (bool)dayfirst, minlimit);
     PyMem_Free(str);
-    
+
     if(res == nullptr)
         Py_RETURN_NONE;
-    else if (res.offset == -1)
-        return PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
-    
-    PyDateTime_DateTime* dt = (PyDateTime_DateTime*)PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
+    else if(res.offset == -1)
+        return PyDateTime_FromDateAndTime(res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec,
+                                          res.microsec);
+
+    PyDateTime_DateTime* dt = (PyDateTime_DateTime*)PyDateTime_FromDateAndTime(
+        res.year + 1900, res.month + 1, res.day, res.hour, res.min, res.sec, res.microsec);
 
 #if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 7
     PyObject* timedelta = PyDelta_FromDSU(0, res.offset, 0);
@@ -3050,7 +2980,7 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
 }
 
 extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kwargs) {
-    PyObject* o, *res;
+    PyObject *o, *res;
     wchar_t* str;
 
     int dayfirst = false;
@@ -3060,15 +2990,15 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ii", (char**)kwlist, &o, &dayfirst, &minlimit))
         return NULL;
 
-    if (!PyUnicode_Check(o))
+    if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
     if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
-    
+
     res = extractdate(str, (bool)dayfirst, minlimit);
     PyMem_Free(str);
-    if (res)
+    if(res)
         return res;
     else
         Py_RETURN_NONE;
@@ -3088,7 +3018,7 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oii", (char**)kwlist, &o, &format, &dayfirst, &minlimit))
         return NULL;
 
-    if (!PyUnicode_Check(o))
+    if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
     if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
@@ -3103,7 +3033,7 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
 
     res = normalized_datetime(str, fmt ? fmt : L"%Y/%m/%d %H:%M:%S", (bool)dayfirst, minlimit);
     PyMem_Free(str);
-    if (fmt)
+    if(fmt)
         PyMem_Free(fmt);
 
     if(!res.empty())
@@ -3151,28 +3081,29 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
 /* PyMethodDef Parameter Help
  * https://docs.python.org/ja/3/c-api/structures.html#c.PyMethodDef
  */
-static PyMethodDef py_methods[] = {PY_ADD_METHOD("flatten", flatten_py, flatten_DESC),
-                                   PY_ADD_METHOD("listify", listify_py, listify_DESC),
-                                   PY_ADD_METHOD("getencoding", nkf_guess_py, getencoding_DESC),
-                                   PY_ADD_METHOD("to_hankaku", to_hankaku_py, to_hankaku_DESC),
-                                   PY_ADD_METHOD("to_zenkaku", to_zenkaku_py, to_zenkaku_DESC),
-                                   PY_ADD_METHOD("kanji2int", kanji2int_py, kanji2int_DESC),
-                                   PY_ADD_METHOD("int2kanji", int2kanji_py, int2kanji_DESC),
-                                   PY_ADD_METHOD("lookuptype", lookuptype_py, lookuptype_DESC),
-                                   PY_ADD_METHOD("is_tar", is_tar_py, is_tar_DESC),
-                                   PY_ADD_METHOD("is_lha", is_lha_py, is_lha_DESC),
-                                   PY_ADD_METHOD("is_xls", is_xls_py, is_xls_DESC),
-                                   PY_ADD_METHOD("is_doc", is_doc_py, is_doc_DESC),
-                                   PY_ADD_METHOD("is_ppt", is_ppt_py, is_ppt_DESC),
-                                   PY_ADD_METHOD("is_xml", is_xml_py, is_xml_DESC),
-                                   PY_ADD_METHOD("is_html", is_html_py, is_html_DESC),
-                                   PY_ADD_METHOD("is_json", is_json_py, is_json_DESC),
-                                   PY_ADD_METHOD("is_dml", is_dml_py, is_dml_DESC),
-                                   PY_ADD_METHOD("is_csv", is_csv_py, is_csv_DESC),
-                                   PY_ADD_METHOD_KWARGS("to_datetime", to_datetime_py, to_datetime_DESC),
-                                   PY_ADD_METHOD_KWARGS("extractdate", extractdate_py, extractdate_DESC),
-                                   PY_ADD_METHOD_KWARGS("normalized_datetime", normalized_datetime_py, normalized_datetime_DESC),
-                                   {NULL, NULL, 0, NULL}};
+static PyMethodDef py_methods[] = {
+    PY_ADD_METHOD("flatten", flatten_py, flatten_DESC),
+    PY_ADD_METHOD("listify", listify_py, listify_DESC),
+    PY_ADD_METHOD("getencoding", nkf_guess_py, getencoding_DESC),
+    PY_ADD_METHOD("to_hankaku", to_hankaku_py, to_hankaku_DESC),
+    PY_ADD_METHOD("to_zenkaku", to_zenkaku_py, to_zenkaku_DESC),
+    PY_ADD_METHOD("kanji2int", kanji2int_py, kanji2int_DESC),
+    PY_ADD_METHOD("int2kanji", int2kanji_py, int2kanji_DESC),
+    PY_ADD_METHOD("lookuptype", lookuptype_py, lookuptype_DESC),
+    PY_ADD_METHOD("is_tar", is_tar_py, is_tar_DESC),
+    PY_ADD_METHOD("is_lha", is_lha_py, is_lha_DESC),
+    PY_ADD_METHOD("is_xls", is_xls_py, is_xls_DESC),
+    PY_ADD_METHOD("is_doc", is_doc_py, is_doc_DESC),
+    PY_ADD_METHOD("is_ppt", is_ppt_py, is_ppt_DESC),
+    PY_ADD_METHOD("is_xml", is_xml_py, is_xml_DESC),
+    PY_ADD_METHOD("is_html", is_html_py, is_html_DESC),
+    PY_ADD_METHOD("is_json", is_json_py, is_json_DESC),
+    PY_ADD_METHOD("is_dml", is_dml_py, is_dml_DESC),
+    PY_ADD_METHOD("is_csv", is_csv_py, is_csv_DESC),
+    PY_ADD_METHOD_KWARGS("to_datetime", to_datetime_py, to_datetime_DESC),
+    PY_ADD_METHOD_KWARGS("extractdate", extractdate_py, extractdate_DESC),
+    PY_ADD_METHOD_KWARGS("normalized_datetime", normalized_datetime_py, normalized_datetime_DESC),
+    {NULL, NULL, 0, NULL}};
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MODULE_DOCS, 0, py_methods};
@@ -3190,4 +3121,3 @@ static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MOD
 #endif
 
 PARSE_FUNC(MODULE_NAME);
-
