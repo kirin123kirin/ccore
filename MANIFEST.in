@@ -1,5 +1,10 @@
 include README.md
 include LICENSE
+include VERSION
 include setup.cfg
-include setup_platname.py
-recursive-include src *.cpp *.hpp *.c *.h
+include CMakeLists.txt
+include tools *.py
+recursive-include resource *.const
+recursive-include ccore *.py *.cxx *.cpp *.hpp *.h *.c
+include tests/test_*
+

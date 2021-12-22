@@ -1,0 +1,1 @@
+﻿static wchar_t hmssep[] = {0, L':', L'_', L'.'};

@@ -1,141 +1,79 @@
-#!/usr/bin/env python
-import re
-
-from setuptools import Extension, setup
-from distutils.ccompiler import get_default_compiler
-import os
-import io
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import sys
+import re
+import os
 from os.path import dirname, join as pjoin
+import platform
 
-__version__ = '0.1.2'
+import skbuild.constants
+skbuild.constants.SKBUILD_DIR = lambda: BUILD_DIR
+from skbuild import setup
+from tools import updatebadge
 
-DESCRIPTION = "core utility units for python"
-KEYWORDS = ["flatten", "to_datetime"]
-LISCENSE = "MIT"
-LANGUAGE = 'c++'
-MOD_NAME = 'ccore'
-MOD_SRC = ['src/ccore.cpp']
-AUTHOR = 'kirin123kirin'
-URL = 'https://github.com/' + AUTHOR + '/' + MOD_NAME
-PLATFORMS = ["Windows", "Linux", "Mac OS-X"]
+# Please Setting ----------------------------------------------------------
+# If you wan't install compiled scripts by C++ etc
 
-# # https://pypi.org/classifiers/
-CLASSIFIERS = """
-Development Status :: 2 - Pre-Alpha
-License :: OSI Approved :: MIT License
-Programming Language :: C
-Programming Language :: C++
-Programming Language :: Python :: 3.6
-Programming Language :: Python :: 3.7
-Programming Language :: Python :: 3.8
-Programming Language :: Python :: 3.9
-Operating System :: OS Independent
-Operating System :: Microsoft :: Windows
-Operating System :: MacOS
-Operating System :: POSIX
-"""
-UNDEF_MACROS = []
+PROJECT_NAME = 'ccore'
 
+# If you wan't change build directory name
+BUILD_DIR = "build"
+
+# https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/Useful-Variables
+# https://scikit-build.readthedocs.io/en/stable/usage.html#usage-scikit-build-options
+cmake_args = {
+    "common": [
+        '-G', "Ninja",
+        # '-G', "Visual Studio 16 2019",
+        "-DCMAKE_C_COMPILER=clang",
+        "-DCMAKE_CXX_COMPILER=clang++",
+
+    ],
+    "windows": [
+    ],
+    "linux": [
+    ],
+    "darwin": [
+    ]
+}
+# -------------------------------------------------------------------------
+
+thisdir = dirname(__file__)
+__version__ = open(pjoin(thisdir, "VERSION"), "r").read().strip()
+
+# OS Environment Infomation
+osname = platform.system().lower()
 iswin = os.name == "nt"
 isposix = os.name == "posix"
-ismsvc = get_default_compiler() == "msvc"
+islinux = osname == "linux"
+isosx = osname == "darwin"
+is_debug = "--debug" in sys.argv[1:] or re.search(r" \-[^ ]*g", " ".join(sys.argv[1:]))
+is_test = 'pytest' in sys.argv or 'test' in sys.argv
 
-globalinc = '/IC:/usr/lib/' if iswin else '-I/usr/include/'
+# convert to scikit-build option
+if "--build-type" not in sys.argv:
+    sys.argv.extend([
+        "--build-type", "PYDEBUG" if is_debug else "Release"
+    ])
 
-def sep(*x):
-    return (":" if ismsvc else "=").join(x)
 
-
-COMPILE_ARGS = [
-    sep('-std', 'c++14'),
-    globalinc + 'boost',
-]
-
-if any("--debug" in x or "-g" in x for x in sys.argv):
-    if ismsvc:
-        UNDEF_MACROS.extend(
-            [
-                "_DEBUG",
-            ]
-        )
-        COMPILE_ARGS.extend(
-            [
-                # Reason https://docs.microsoft.com/ja-jp/cpp/build/reference/ltcg-link-time-code-generation?view=msvc-160
-                "/GL",
-                # Reason unicode string crash #
-                "/source-charset:utf-8",
-                # Reason IDE warning link crash #
-                "/FC",
-            ]
-        )
-
-    elif isposix:
-        COMPILE_ARGS.extend(
-            [
-                "-O0",
-            ]
-        )
+# Readme badge link update.
+updatebadge.readme(pjoin(thisdir, "README.md"), new_version=__version__)
 
 # Edit posix platname for pypi upload error
-if isposix and any(x.startswith("bdist") for x in sys.argv) \
+if islinux and any(x.startswith("bdist") for x in sys.argv) \
         and not ("--plat-name" in sys.argv or "-p" in sys.argv):
-
-    if "64" in os.uname()[-1]:
-        from setup_platname import get_platname_64bit
-
-        plat = get_platname_64bit()
-    else:
-        from setup_platname import get_platname_32bit
-
-        plat = get_platname_32bit()
-    sys.argv.extend(["--plat-name", plat])
+    from tools.platforms import get_platname_64bit as x64
+    from tools.platforms import get_platname_32bit as x86
+    sys.argv.extend(["--plat-name", x64() if "64" in os.uname()[-1] else x86()])
 
 
-# Readme read or edit
-readme = pjoin(dirname(__file__), "README.md")
-badge = re.compile(r'(\[!\[.*?\]\(https://.*?badge\.(?:svg|png)\?branch=([^\)]+)\)\])')
-description = ""
-is_change = False
-with io.open(readme, encoding="utf-8") as f:
-    for line in f:
-        res = badge.search(line)
-        if res and __version__ not in res.group(2):
-            for b, k in badge.findall(line):
-                line = line.replace(b, b.replace(k, "v" + __version__))
-            is_change = True
-        description += line
+setup(
+    # to be package directory name.
+    packages=[PROJECT_NAME],
+    cmake_args=cmake_args["common"] + cmake_args.get(osname, []),
 
-if is_change:
-    with io.open(readme, "w", encoding="utf-8") as f:
-        f.write(description)
-
-# for python2.7
-tests = {}
-if sys.version_info[:2] >= (3, 3):
-    tests = dict(
-        setup_requires=["pytest-runner"],
-        tests_require=["pytest", "pytest-cov", "psutil"])
-
-setup(name=MOD_NAME,
-      version=__version__,
-      description=DESCRIPTION,
-      long_description_content_type='text/markdown',
-      long_description=description,
-      url=URL,
-      author=AUTHOR,
-      ext_modules=[
-          Extension(
-              MOD_NAME,
-              sources=MOD_SRC,
-              undef_macros=UNDEF_MACROS,
-              extra_compile_args=COMPILE_ARGS,
-              language=LANGUAGE
-          )
-      ],
-      keywords=KEYWORDS,
-      license=LISCENSE,
-      platforms=PLATFORMS,
-      classifiers=CLASSIFIERS.strip().splitlines(),
-      **tests
-      )
+    # Require pytest-runner only when running tests
+    setup_requires=['pytest-runner>=2.0,<3dev'] if is_test else [],
+)
+# Other Setting to setup.cfg

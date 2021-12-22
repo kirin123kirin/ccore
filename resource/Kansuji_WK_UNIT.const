@@ -1,0 +1,13 @@
+﻿const std::unordered_map<Kansuji::value_type, Kansuji::index_type> Kansuji::WK_UNIT = {
+    {L'〇', (Kansuji::index_type)0}, {L'一', (Kansuji::index_type)1}, {L'二', (Kansuji::index_type)2},
+    {L'三', (Kansuji::index_type)3}, {L'四', (Kansuji::index_type)4}, {L'五', (Kansuji::index_type)5},
+    {L'六', (Kansuji::index_type)6}, {L'七', (Kansuji::index_type)7}, {L'八', (Kansuji::index_type)8},
+    {L'九', (Kansuji::index_type)9}, {L'０', (Kansuji::index_type)0}, {L'１', (Kansuji::index_type)1},
+    {L'２', (Kansuji::index_type)2}, {L'３', (Kansuji::index_type)3}, {L'４', (Kansuji::index_type)4},
+    {L'５', (Kansuji::index_type)5}, {L'６', (Kansuji::index_type)6}, {L'７', (Kansuji::index_type)7},
+    {L'８', (Kansuji::index_type)8}, {L'９', (Kansuji::index_type)9}, {L'0', (Kansuji::index_type)0},
+    {L'1', (Kansuji::index_type)1},  {L'2', (Kansuji::index_type)2},  {L'3', (Kansuji::index_type)3},
+    {L'4', (Kansuji::index_type)4},  {L'5', (Kansuji::index_type)5},  {L'6', (Kansuji::index_type)6},
+    {L'7', (Kansuji::index_type)7},  {L'8', (Kansuji::index_type)8},  {L'9', (Kansuji::index_type)9},
+    {L'零', (Kansuji::index_type)0}, {L'壱', (Kansuji::index_type)1}, {L'弐', (Kansuji::index_type)2},
+    {L'参', (Kansuji::index_type)3}};

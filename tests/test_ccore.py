@@ -1,48 +1,53 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from timeit import timeit
-from datetime import datetime, timezone, timedelta
 import os
 import sys
-from psutil import virtual_memory, Process
-process = Process(os.getpid())
+from glob import glob
+from timeit import timeit
+from psutil import Process
+from datetime import datetime, timezone, timedelta
 
-IMPORTS = ' import flatten, listify, lookuptype, to_hankaku, to_zenkaku, kanji2int, int2kanji, to_datetime, extractdate, normalized_datetime'
+
+from os.path import dirname, abspath, join as pjoin
+shome = abspath(pjoin(dirname(__file__), ".."))
+sys.path.insert(0, pjoin(shome, "build"))
+sys.path.insert(0, pjoin(shome, "build", "cmake-build"))
+sys.path.insert(0, pjoin(shome, "_skbuild", "cmake-build"))
+sys.path.insert(0, pjoin(shome, "build", "cmake-install"))
+sys.path.insert(0, pjoin(shome, "_skbuild", "cmake-install"))
 try:
-    from ccore.ccore import *
-    smip = 'from ccore.ccore'
-except:
-    try:
-        from ccore.build.ccore import *
-        smip = 'from ccore.build.ccore'
-    except:
-        try:
-            from build.ccore import *
-            smip = 'from build.ccore'
-        except:
-            from ccore import *
-            smip = 'from ccore'
+    from ccore import *
+except (ImportError, ModuleNotFoundError):
+    from _ccore import *
 
-smip += IMPORTS
+from socket import gethostname
+__tdpath = "/portable.app/usr/share/testdata/"
+if gethostname() == "localhost":
+    tdir = "/storage/emulated/0/Android/data/com.dropbox.android/files/u9335201/scratch" + __tdpath
+elif os.name == "posix":
+    tdir = os.getenv("HOME") + "/Dropbox/" + __tdpath
+else:
+    tdir = "Y:/usr/share/testdata/"
 
+
+process = Process(os.getpid())
 def memusage():
     return process.memory_info()[0] / 1024
 
-def runtimeit(funcstr, setup=smip, number=100000, normalize=10000):
-    st = setup.strip()
+def runtimeit(funcstr, number=10000):
     i = 0
+
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
         if i == 0:
-            timeit(fc, st, number=number)
+            timeit(fc, globals=globals(), number=number)
         bm = memusage()
-        p = timeit(fc, st, number=number)
+        p = timeit(fc, globals=globals(), number=number)
+
         am = (memusage() - bm)
-        try:
-            print("{}: {} ns (mem after {}KB)".format(fc, int(p * normalize), am))
-        except UnicodeEncodeError:
-            print("???: {} ns (mem after {}KB)".format(int(p * normalize), am))
+        assert am < 10000, "{} function {}KB Memory Leak Error".format(fc, am)
+        print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
         i += 1
 
 
@@ -80,6 +85,11 @@ def test_lookuptype():
     runtimeit('lookuptype(b"hoge")')
     runtimeit("lookuptype(b'PK\\x03\\x04dsfal\\x00')")
 
+def test_guesstype():
+    for g in glob(tdir+"*"):
+        basename = os.path.basename(g)
+        with open(g, "rb") as f:
+            print(basename, lookuptype(f.read(256)))
 
 def test_kanji2int():
     assert(kanji2int("一億２千") == "100002000")
@@ -279,7 +289,6 @@ def test_error_datetime():
     assert(to_datetime("hoge") == None)
     assert(to_datetime("ho123年ge") == None)
 
-
 if __name__ == '__main__':
     import os
     import traceback
@@ -296,4 +305,3 @@ if __name__ == '__main__':
         raise (e)
     finally:
         os.chdir(curdir)
-

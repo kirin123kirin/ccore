@@ -1,0 +1,3 @@
+﻿static const std::unordered_set<wchar_t, nohash<wchar_t>> NUMBERS = {
+    L'0',  L'1',  L'2',  L'3',  L'4',  L'5',  L'6',  L'7',  L'8',  L'9',  L'０', L'１', L'２', L'３', L'４', L'５',
+    L'６', L'７', L'８', L'９', L'〇', L'一', L'二', L'三', L'四', L'五', L'六', L'七', L'八', L'九', L'十'};

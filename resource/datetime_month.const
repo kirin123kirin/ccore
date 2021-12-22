@@ -1,0 +1,5 @@
+﻿static const std::wstring ml[12][2] = {
+    {L"January", L"Jan"},   {L"February", L"Feb"}, {L"March", L"Mar"},    {L"April", L"Apr"},
+    {L"May", L"May"},       {L"June", L"Jun"},     {L"July", L"Jul"},     {L"August", L"Aug"},
+    {L"September", L"Sep"}, {L"October", L"Oct"},  {L"November", L"Nov"}, {L"December", L"Dec"},
+};

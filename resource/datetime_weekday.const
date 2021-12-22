@@ -1,0 +1,9 @@
+﻿static const std::wstring weekday[7][6] = {
+    {L"Sunday", L"Sun", L"日曜日", L"日曜", L"(日)", L"日"},
+    {L"Monday", L"Mon", L"月曜日", L"月曜", L"(月)", L"月"},
+    {L"Tuesday", L"Tue", L"火曜日", L"火曜", L"(火)", L"火"},
+    {L"Wednesday", L"Wed", L"水曜日", L"水曜", L"(水)", L"水"},
+    {L"Thursday", L"Thu", L"木曜日", L"木曜", L"(木)", L"木"},
+    {L"Friday", L"Fri", L"金曜日", L"金曜", L"(金)", L"金"},
+    {L"Saturday", L"Sat", L"土曜日", L"土曜", L"(土)", L"土"},
+};

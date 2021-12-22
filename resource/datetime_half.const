@@ -1,0 +1,2 @@
+﻿static const std::wstring half[] = {L"am", L"pm",  L"a.m", L"p.m",  L"a.m.", L"p.m.", L"AM",
+                                    L"PM", L"A.M", L"P.M", L"A.M.", L"P.M.", L"午前", L"午後"};

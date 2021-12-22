@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from os.path import dirname, normpath, join as pjoin
 
 try:

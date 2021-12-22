@@ -1,0 +1,6 @@
+﻿const std::unordered_map<Kansuji::value_type, Kansuji::index_type> Kansuji::D3_UNIT = {
+    {L'十', (Kansuji::index_type)1},
+    {L'百', (Kansuji::index_type)2},
+    {L'千', (Kansuji::index_type)3},
+    {L'拾', (Kansuji::index_type)1},
+};

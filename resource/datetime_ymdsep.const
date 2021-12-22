@@ -1,0 +1,1 @@
+﻿static wchar_t ymdsep[] = {0, L'/', L'-', L'_', L'.', L','};

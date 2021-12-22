@@ -1,0 +1,8 @@
+﻿const std::unordered_map<Kansuji::value_type, Kansuji::value_type, Kansuji::no_hash> Kansuji::Collections = {
+    {L' ', L""[0]},   // delete
+    {L'　', L""[0]},  // delete
+    {L'，', L'，'},   // through
+    {L',', L','},     // through
+    {L'．', L'.'},    // replace
+    {L'拾', L'十'},   // replace
+};

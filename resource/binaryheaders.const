@@ -1,0 +1,323 @@
+﻿static std::unordered_map<char, std::vector<dic>> start = {
+    {'\x00',
+     {
+         dic{"\x00\x00\x01\x00", "icon", 4},
+         dic{"\x00\x00\x01\xba", "mpg", 4},
+         dic{"\x00\x01\x00\x00\x53\x74\x61\x6e\x64\x61\x72\x64\x20\x41\x43\x45\x20\x44\x42\x00", "accdb", 20},
+         dic{"\x00\x01\x00\x00\x53\x74\x61\x6e\x64\x61\x72\x64\x20\x4a\x65\x74\x20\x44\x42\x00", "mdb", 20},
+         dic{"\x00\x01\x00\x00", "palmdata", 4},
+         dic{"\x00\x01\x42\x44", "palmarchivedata", 4},
+         dic{"\x00\x01\x44\x54", "palmcalenderdata", 4},
+         dic{"\x00\x61\x73\x6d", "asm", 4},
+         dic{"\x00\x6d\x6c\x6f\x63\x61\x74\x65", "locate", 8},
+     }},
+    {'\x04',
+     {
+         dic{"\x04\x22\x4d\x18", "lz4", 4},
+     }},
+    {'\x05',
+     {
+         dic{"\x05\x07\x00\x00\x42\x4f\x42\x4f\x05\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", "cwk", 22},
+     }},
+    {'\x06',
+     {
+         dic{"\x06\x07\xe1\x00\x42\x4f\x42\x4f\x06\x07\xe1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", "cwk", 22},
+     }},
+    {'\x0a',
+     {
+         dic{"\x0a\x0d\x0d\x0a", "pcapng", 4},
+     }},
+    {'\x0e',
+     {
+         dic{"\x0E\x03\x13\x01\x00", "hdf", 4},
+     }},
+    {'\x1a',
+     {
+         dic{"\x1a\x45\xdf\xa3", "mkv", 4},
+     }},
+    {'\x1b',
+     {
+         dic{"\x1b\x4c\x75\x61", "luac", 4},
+     }},
+    {'\x1f',
+     {
+         dic{"\x1f\x8b", "gz", 2},
+         dic{"\x1f\x9d", "Z", 2},
+         dic{"\x1f\xa0", "Z", 2},
+     }},
+    {'\x20',
+     {
+         dic{"\x20\x02\x01\x62\xa0\x1e\xab\x07\x02\x00\x00\x00", "tde", 12},
+     }},
+    {'\x21',
+     {
+         dic{"\x21\x3c\x61\x72\x63\x68\x3e", "linux deb file", 7},
+     }},
+    {'\x24',
+     {
+         dic{"\x24\x53\x44\x49\x30\x30\x30\x31", "System Deployment Image", 8},
+     }},
+    {'\x25',
+     {
+         dic{"\x25\x21\x50\x53", "ps", 4},
+         dic{"\x25\x50\x44\x46", "pdf", 4},
+     }},
+    {'\x27',
+     {
+         dic{"\x27\x05\x19\x56", "U-Boot / uImage. Das U-Boot Universal Boot Loader.", 4},
+     }},
+    {'\x28',
+     {
+         dic{"\x28\xb5\x2f\xfd", "Z", 4},
+     }},
+    {'\x30',
+     {
+         dic{"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", "asf", 16},
+         dic{"\x30\x82", "der", 2},
+     }},
+    {'\x37',
+     {
+         dic{"\x37\x48\x03\x02\x00\x00\x00\x00\x58\x35\x30\x39\x4b\x45\x59", "kdb", 15},
+         dic{"\x37\x7a\xbc\xaf\x27\x1c", "7z", 6},
+         dic{"\x37\x80\x68\x70\x45", "pdf", 5},
+     }},
+    {'\x38',
+     {
+         dic{"\x38\x42\x50\x53", "psd", 4},
+     }},
+    {'\x3a',
+     {
+         dic{"\x3a\x29\x0a", "Smile file", 3},
+     }},
+    {'\x41',
+     {
+         dic{"\x41\x47\x44\x33", "fh8", 4},
+     }},
+    {'\x42',
+     {
+         dic{"\x42\x41\x43\x4b\x4d\x49\x4b\x45\x44\x49\x53\x4b",
+             "File or tape containing a backup done with AmiBack on an Amiga. It typically is paired with an index "
+             "file ",
+             12},
+         dic{"\x42\x4d", "bmp", 2},
+         dic{"\x42\x50\x47\xfb", "Better Portable Graphics format", 4},
+         dic{"\x42\x5a\x68", "bz2", 3},
+     }},
+    {'\x43',
+     {
+         dic{"\x43\x57\x53\x46\x57\x53", "swf", 6},
+         dic{"\x43\x72\x32\x34", "Google Chrome extension", 4},
+     }},
+    {'\x44',
+     {
+         dic{"\x44\x43\x4d\x01\x50\x41\x33\x30", "Windows Update Binary Delta Compression", 8},
+     }},
+    {'\x45',
+     {
+         dic{"\x45\x4d\x55\x33", "Emulator III synth samples", 4},
+         dic{"\x45\x4d\x58\x32", "Emulator Emaxsynth samples", 4},
+         dic{"\x45\x52\x02\x00\x00\x00\x8b\x45\x52\x02\x00\x00\x00", "Roxio Toast disc image file", 13},
+     }},
+    {'\x46',
+     {
+         dic{"\x46\x4c\x49\x46", "Free Lossless Image Format", 4},
+     }},
+    {'\x47',
+     {
+         dic{"\x47\x49\x46\x38\x37\x61\x47\x49\x46\x38\x39\x61", "gif", 12},
+     }},
+    {'\x49',
+     {
+         dic{"\x49\x44\x33", "mp3", 3},
+         dic{"\x49\x49\x2a\x00", "tiff", 4},
+         dic{"\x49\x49\x2a\x00\x10\x00\x00\x00\x43\x52", "Canon RAW Format Version 2", 10},
+         dic{"\x49\x4e\x44\x58", "Index file to a file or tape containing a backup done with AmiBack on an Amiga.", 4},
+     }},
+    {'\x4c',
+     {
+         dic{"\x4c\x00\x00\x00", "lnk", 4},
+         dic{"\x4c\x5a\x49\x50", "lzip", 4},
+     }},
+    {'\x4b',
+     {
+         dic{"\x4b\x44\x4d", "vmdk", 3},
+     }},
+    {'\x4d',
+     {
+         dic{"\x4d\x49\x4c\x20", "SEAN", 4},
+         dic{"\x4d\x4c\x56\x49", "Magic Lantern Video file", 4},
+         dic{"\x4d\x53\x43\x46", "cab", 4},
+         dic{"\x4d\x54\x68\x64", "midi", 4},
+         dic{"\x4d\x5a", "exe", 2},
+     }},
+    {'\x4e',
+     {
+         dic{"\x4e\x45\x53\x1a", "Nintendo Entertainment System ROM file", 4},
+     }},
+    {'\x4f',
+     {
+         dic{"\x4f\x52\x43", "Apache ORC ", 3},
+         dic{"\x4f\x62\x6a\x01", "Apache Avro binary file format", 4},
+         dic{"\x4f\x67\x67\x53", "Ogg", 4},
+     }},
+    {'\x50',
+     {
+         dic{"\x50\x41\x52\x31", "Apache Parquet columnar file format", 4},
+         dic{"\x50\x4b\x03\x04", "zip", 4},
+         dic{"\x50\x4b\x05\x06", "zip empty archive", 4},
+         dic{"\x50\x4b\x07\x08", "zip spanned archive", 4},
+         dic{"\x50\x4d\x4f\x43\x43\x4d\x4f\x43", "Windows Files And Settings Transfer Repository", 8},
+     }},
+    {'\x52',
+     {
+         dic{"\x52\x4e\x43\x01\x52\x4e\x43\x02", "Compressed file using Rob Northen Compression ", 8},
+         dic{"\x52\x61\x72\x21\x1a\x07\x00", "rar", 7},
+         dic{"\x52\x61\x72\x21\x1a\x07\x01\x00", "rar", 8},
+         dic{"\x52\x65\x63\x65\x69\x76\x65\x64", "Email Message var5", 8},
+     }},
+    {'\x53',
+     {
+         dic{"\x53\x45\x51\x36", "RCFile columnar file format", 4},
+         dic{"\x53\x49\x4d\x50\x4c\x45\x20\x20\x3d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+             "\x20\x20\x20\x54",
+             "Flexible Image Transport System ", 30},
+         dic{"\x53\x50\x30\x31", "Amazon Kindle Update Package ", 4},
+         dic{"\x53\x51\x4c\x69\x74\x65\x20\x66\x6f\x72\x6d\x61\x74\x20\x33\x00", "sqlite3", 16},
+         dic{"\x53\x5a\x44\x44\x88\xf0\x27\x33", "Microsoft compressed file in Quantum format", 8},
+     }},
+    {'\x54',
+     {
+         dic{"\x54\x41\x50\x45", "Microsoft Tape Format", 4},
+         dic{"\x54\x44\x45\x46", "Telegram Desktop Encrypted File", 4},
+         dic{"\x54\x44\x46\x24", "Telegram Desktop File", 4},
+     }},
+    {'\x55',
+     {
+         dic{"\x55\x55\xaa\xaa", "PhotoCap Vector", 4},
+     }},
+    {'\x58',
+     {
+         dic{"\x58\x50\x44\x53", "SMPTE DPX image", 4},
+     }},
+    {'\x5b',
+     {
+         dic{"\x5b\x5a\x6f\x6e\x65\x54\x72\x61\x6e\x73\x66\x65\x72\x5d",
+             "Microsoft Zone Identifier for URL Security Zones", 14},
+     }},
+    {'\x62',
+     {
+         dic{"\x62\x6f\x6f\x6b\x00\x00\x00\x00\x6d\x61\x72\x6b\x00\x00\x00\x00", "macOS file Alias", 16},
+         dic{"\x62\x76\x78\x32",
+             "LZFSE - Lempel-Ziv style data compression algorithm using Finite State Entropy coding. OSS by Apple.", 4},
+     }},
+    {'\x64',
+     {
+         dic{"\x64\x65\x78\x0a\x30\x33\x35\x00", "Dalvik Executable", 8},
+     }},
+    {'\x65',
+     {
+         dic{"\x65\x87\x78\x56", "PhotoCap Object Templates", 4},
+     }},
+    {'\x66',
+     {
+         dic{"\x66\x4c\x61\x43", "Free Lossless Audio Codec", 4},
+     }},
+    {'\x74',
+     {
+         dic{"\x74\x6f\x78\x33", "Open source portable voxel file", 4},
+     }},
+    {'\x76',
+     {
+         dic{"\x76\x2f\x31\x01", "OpenEXR image", 4},
+     }},
+    {'\x77',
+     {
+         dic{"\x77\x4f\x46\x32", "WOFF File Format 2.0", 4},
+         dic{"\x77\x4f\x46\x46", "WOFF File Format 1.0", 4},
+     }},
+    {'\x78',
+     {
+         dic{"\x78\x01\x73\x0d\x62\x62\x60", "dmg", 7},
+         dic{"\x78\x01\x37\x38\x9c\x37\x38\xda", "No Compression/low Default Compression Best Compression", 8},
+         dic{"\x78\x56\x34", "PhotoCap Template", 3},
+         dic{"\x78\x61\x72\x21", "eXtensible ARchive format", 4},
+     }},
+    {'\x7b',
+     {
+         dic{"\x7b\x5c\x72\x74\x66\x31", "rtf", 6},
+     }},
+    {'\x7f',
+     {
+         dic{"\x7f\x45\x4c\x46", "Executable and Linkable Format", 4},
+     }},
+    {'\x80',
+     {
+         dic{"\x80\x2a\x5f\xd7", "Kodak Cineon image", 4},
+         dic{"\x80\x02", "pickle", 2},
+         dic{"\x80\x03", "pickle", 2},
+         dic{"\x80\x04", "pickle", 2},
+         dic{"\x80\x05", "pickle", 2},
+     }},
+    {'\x89',
+     {
+         dic{"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", "png", 8},
+         dic{"\x89\x48\x44\x46\x0d\x0a\x1a\x0a", "hdf5", 8},
+     }},
+    {'\x96',
+     {
+         dic{"\x96\xd5\x75\x21", "sarbin", 4},
+     }},
+    {'\xa1',
+     {
+         dic{"\xa1\xb2\xc3\xd4\xd4\xc3\xb2\xa1", "Libpcap File Format", 8},
+     }},
+    {'\xbe',
+     {
+         dic{"\xbe\xba\xfe\xca", "palmcalenderdata", 4},
+     }},
+    {'\xca',
+     {
+         dic{"\xca\xfe\xba\xbe", "javaclass", 4},
+     }},
+    {'\xce',
+     {
+         dic{"\xce\xfa\xed\xfe", "Mach-O binary ", 4},
+     }},
+    {'\xcf',
+     {
+         dic{"\xcf\x84\x01", "jpg", 3},
+         dic{"\xcf\xfa\xed\xfe", "Mach-O binary ", 4},
+     }},
+    {'\xd0',
+     {
+         dic{"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", "Microsoft Office 2003older", 8},
+     }},
+    {'\xd4',
+     {
+         dic{"\xd4\xc3\xb2\xa1", "pcap", 4},
+     }},
+    {'\xed',
+     {
+         dic{"\xed\xab\xee\xdb", "rpm ", 4},
+     }},
+    {'\xef',
+     {
+         dic{"\xef\xbb\xbf", "UTF-8 encoded Unicode byte order mark", 3},
+     }},
+    {'\xfd',
+     {
+         dic{"\xfd\x37\x7a\x58\x5a\x00\x00", "xz", 7},
+     }},
+    {'\xfe',
+     {
+         dic{"\xfe\xed\xfe\xed", "JKS JavakeyStore", 4},
+     }},
+    {'\xff',
+     {
+         dic{"\xff\xfb", "mp3", 2},
+         dic{"\xff\xfe", "Byte-order mark for text file encoded in little-endian 16-bit Unicode Transfer Format", 2},
+         dic{"\xff\xfe\x00\x00",
+             "Byte-order mark for text file encoded in little-endian 32-bit Unicode Transfer Format", 4},
+     }},
+
+};

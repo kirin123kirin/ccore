@@ -1,0 +1,19 @@
+﻿static std::unordered_map<char, std::vector<reg>> regs = {
+    {'F',
+     {
+         reg{R"(FORM....AIFF)", "aiff"},
+         reg{R"(FORM....ANBM)", "anbm"},
+         reg{R"(FORM....ANIM)", "anim"},
+         reg{R"(FORM....CMUS)", "cmus"},
+         reg{R"(FORM....FANT)", "fant"},
+         reg{R"(FORM....FAXX)", "faxx"},
+         reg{R"(FORM....FTXT)", "ftxt"},
+         reg{R"(FORM....ILBM)", "ilbm"},
+         reg{R"(FORM....SMUS)", "smus"},
+         reg{R"(FORM....YUVN)", "yuvn"},
+     }},                                                                                                    // 70
+    {'R', {reg{R"(RIFF....AVI )", "avi"}, reg{R"(RIFF....WAVE)", "wav"}, reg{R"(RIFF....WEBP)", "webp"}}},  // 82
+    {'\xff',
+     {reg{R"(\xff\xd8\xff\xdb\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\xff\xd8\xff\xee\xff\xd8\xff\xe1..Exif\x00\x00)",
+          "jpg"}}},  // 255
+};
