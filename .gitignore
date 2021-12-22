@@ -426,6 +426,7 @@ FodyWeavers.xsd
 
 # build output (testing)
 skbuild/cmake_test_compile/*
+_cmake_test_compile/
 *.env
 
 test/_*
