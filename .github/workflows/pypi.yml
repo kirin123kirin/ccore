@@ -65,7 +65,7 @@ jobs:
             if:    ${{ matrix.python-version == '2.7' }}
             run:   |
                    pip install -e .
-                   python test/test_ccore.py
+                   python tests/test_ccore.py
                    python setup.py bdist_wheel
                    twine check dist/*
          -
