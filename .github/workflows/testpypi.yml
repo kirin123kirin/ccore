@@ -21,7 +21,6 @@ jobs:
                   macos-latest
             ]
             python-version: [
-                  2.7,
                   3.6,
                   3.7,
                   3.8,
@@ -30,13 +29,7 @@ jobs:
             exclude:
                -
                   platform:       windows-latest
-                  python-version: 2.7
-               -
-                  platform:       windows-latest
                   python-version: 3.6
-               -
-                  platform:       macos-latest
-                  python-version: 2.7
 
       steps:
          -
@@ -56,18 +49,8 @@ jobs:
                    python -m pip install -U pip
                    pip install setuptools wheel pytest flake8 twine psutil scikit-build ninja cmake
          -
-            name:  Test and Build for 2.7
-            shell: bash
-            if:    ${{ matrix.python-version == '2.7' }}
-            run:   |
-                   pip install -e .
-                   python test/test_ccore.py
-                   python setup.py bdist_wheel
-                   twine check dist/*
-         -
             name:  Test and Build for >= 3.6
             shell: bash
-            if:    ${{ matrix.python-version != '2.7' }}
             run:   |
                    flake8
                    python setup.py build
