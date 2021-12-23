@@ -29,7 +29,7 @@ wchar_t* PyUnicode_AsWideCharString(PyObject *unicode, Py_ssize_t *size) {
     }
 
     Py_ssize_t buflen = PyUnicode_GetSize(unicode);
-    const wchar_t *wstr = PyUnicode_AsUnicode(unicode);
+    const wchar_t *wstr = (const wchar_t *)PyUnicode_AsUnicode(unicode);
     if (wstr == NULL) {
         return NULL;
     }
