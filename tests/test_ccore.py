@@ -7,7 +7,7 @@ from glob import glob
 from timeit import timeit
 from psutil import Process
 from datetime import datetime, timezone, timedelta
-
+sys.setdefaultencoding("utf-8")
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
