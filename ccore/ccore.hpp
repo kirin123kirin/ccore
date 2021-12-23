@@ -507,9 +507,8 @@ class Kansuji {
     }
     static PyObject* kanji2int(PyObject* u) {
         Py_ssize_t len = PyObject_Length(u);
-
-        data_type wdat;
-        PyUnicode_AsWideChar(u, wdat, len);
+        data_type wdat = PyMem_NEW(value_type, len + 1);
+        PyUnicode_AsWideChar(u, wdat, len + 1);
         if(wdat == NULL)
             return NULL;
 
