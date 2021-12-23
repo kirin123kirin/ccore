@@ -6,7 +6,9 @@ import sys
 from glob import glob
 from timeit import timeit
 from psutil import Process
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
+if sys.version_info[:2] >= (3, 7):
+    from datetime import timezone, timedelta
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
