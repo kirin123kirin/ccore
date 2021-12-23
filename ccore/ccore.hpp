@@ -2,8 +2,8 @@
 /* ccore.cpp | MIT License | https://github.com/kirin123kirin/ccore/raw/ccore.exe/LICENSE */
 
 #pragma once
-#ifndef CSANKEY_HPP
-#define CSANKEY_HPP
+#ifndef CCORE_HPP
+#define CCORE_HPP
 
 #include <Python.h>
 #include <datetime.h>
@@ -16,6 +16,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#if PY_MAJOR_VERSION == 2
+#define PyUnicode_DATA PyUnicode_AS_DATA
+#define PyUnicode_KIND(x) 2
+#define PyUnicode_READY(x) true
+#endif
 
 #define IS_WIN _WIN32 || _WIN64
 
@@ -502,7 +508,8 @@ class Kansuji {
     static PyObject* kanji2int(PyObject* u) {
         Py_ssize_t len;
 
-        data_type wdat = PyUnicode_AsWideCharString(u, &len);
+        data_type wdat;
+        PyUnicode_AsWideCharString(u, wdat, &len);
         if(wdat == NULL)
             return NULL;
 
