@@ -21,6 +21,35 @@
 #define PyUnicode_DATA PyUnicode_AS_DATA
 #define PyUnicode_KIND(x) 2
 #define PyUnicode_READY(x) true
+
+wchar_t* PyUnicode_AsWideCharString(PyObject *unicode, Py_ssize_t *size) {
+    if (unicode == NULL) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    Py_ssize_t buflen = PyUnicode_GetSize(unicode);
+    const wchar_t *wstr = PyUnicode_AsUnicode(unicode);
+    if (wstr == NULL) {
+        return NULL;
+    }
+    if (size == NULL && wcslen(wstr) != (size_t)buflen) {
+        PyErr_SetString(PyExc_ValueError,
+                        "embedded null character");
+        return NULL;
+    }
+
+    wchar_t *buffer = PyMem_NEW(wchar_t, buflen + 1);
+    if (buffer == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    memcpy(buffer, wstr, (buflen + 1) * sizeof(wchar_t));
+    if (size != NULL)
+        *size = buflen;
+    return buffer;
+}
+
 #endif
 
 #define IS_WIN _WIN32 || _WIN64
@@ -506,9 +535,8 @@ class Kansuji {
         return ks.data_;
     }
     static PyObject* kanji2int(PyObject* u) {
-        Py_ssize_t len = PyObject_Length(u);
-        data_type wdat = PyMem_NEW(value_type, len + 1);
-        PyUnicode_AsWideChar(u, wdat, len + 1);
+        Py_ssize_t len;
+        data_type wdat = PyUnicode_AsWideCharString(u, &len);
         if(wdat == NULL)
             return NULL;
 

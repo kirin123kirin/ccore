@@ -187,9 +187,8 @@ extern "C" PyObject* to_hankaku_py(PyObject* self, PyObject* args) {
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
 
     unsigned int kind = PyUnicode_KIND(str);
-    Py_ssize_t len = PyObject_Length(str);
-    wchar_t* wdat = PyMem_NEW(wchar_t, len + 1);
-    PyUnicode_AsWideChar(str, wdat, len + 1);
+    Py_ssize_t len;
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);
     if(wdat == NULL)
         return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0 || kind == 1)
@@ -211,10 +210,8 @@ extern "C" PyObject* to_zenkaku_py(PyObject* self, PyObject* args) {
     if(!PyUnicode_Check(str) || PyUnicode_READY(str) == -1)
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
 
-    Py_ssize_t len = PyObject_Length(str);
-    wchar_t* wdat = PyMem_NEW(wchar_t, len + 1);
-    PyUnicode_AsWideChar(str, wdat, len + 1);
-
+    Py_ssize_t len;
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);
     if(wdat == NULL)
         return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0)
@@ -433,10 +430,8 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
         return o;
     else if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    Py_ssize_t len = PyObject_Length(o);
-    str = PyMem_NEW(wchar_t, len + 1);
-    PyUnicode_AsWideChar(o, str, len + 1);
-    if(str == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     res = to_datetime(str, (bool)dayfirst, minlimit);
@@ -479,10 +474,8 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
 
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    Py_ssize_t len = PyObject_Length(o);
-    str = PyMem_NEW(wchar_t, len + 1);
-    PyUnicode_AsWideChar(o, str, len + 1);
-    if(str == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     res = extractdate(str, (bool)dayfirst, minlimit);
@@ -509,18 +502,14 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
 
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
-    Py_ssize_t len = PyObject_Length(o);
-    str = PyMem_NEW(wchar_t, len + 1);
-    PyUnicode_AsWideChar(o, str, len + 1);
-    if(str == NULL)
+    Py_ssize_t len;
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     if(format) {
         if(!PyUnicode_Check(format))
             return PyErr_Format(PyExc_ValueError, "Need strftime formating unicode string.");
-        fmt = PyMem_NEW(wchar_t, len + 1);
-        PyUnicode_AsWideChar(o, fmt, len + 1);
-        if(fmt == NULL)
+        if((fmt = PyUnicode_AsWideCharString(format, &len)) == NULL)
             return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
     }
 
