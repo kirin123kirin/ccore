@@ -433,7 +433,7 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
     else if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    PyUnicode_AsWideChar(o, str, &len)
+    PyUnicode_AsWideChar(o, str, &len);
     if(str == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
@@ -478,7 +478,7 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    PyUnicode_AsWideChar(o, str, &len)
+    PyUnicode_AsWideChar(o, str, &len);
     if(str == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
@@ -507,14 +507,14 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    PyUnicode_AsWideChar(o, str, &len)
+    PyUnicode_AsWideChar(o, str, &len);
     if(str == NULL)
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     if(format) {
         if(!PyUnicode_Check(format))
             return PyErr_Format(PyExc_ValueError, "Need strftime formating unicode string.");
-        PyUnicode_AsWideChar(o, fmt, &len)
+        PyUnicode_AsWideChar(o, fmt, &len);
         if(fmt == NULL)
             return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
     }
