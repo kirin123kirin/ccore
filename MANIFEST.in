@@ -3,7 +3,7 @@ include LICENSE
 include VERSION
 include setup.cfg
 include CMakeLists.txt
-include tools *.py
+recursive-include tools *.py
 recursive-include resource *.const
 recursive-include ccore *.py *.cxx *.cpp *.hpp *.h *.c
 include tests/test_*
