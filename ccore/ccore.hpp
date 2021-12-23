@@ -509,7 +509,7 @@ class Kansuji {
         Py_ssize_t len;
 
         data_type wdat;
-        PyUnicode_AsWideCharString(u, wdat, &len);
+        PyUnicode_AsWideChar(u, wdat, &len);
         if(wdat == NULL)
             return NULL;
 
