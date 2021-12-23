@@ -213,7 +213,7 @@ extern "C" PyObject* to_zenkaku_py(PyObject* self, PyObject* args) {
 
     Py_ssize_t len = PyObject_Length(str);
     wchar_t* wdat;
-    PyUnicode_AsWideChar(str, wchar, len);
+    PyUnicode_AsWideChar(str, wdat, len);
     if(wdat == NULL)
         return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0)
