@@ -4,7 +4,7 @@
 import re
 
 def readme(fname, new_version):
-    badge = re.compile(rb'(\[!\[.*?\]\(https://.*?badge\.(?:svg|png)\?branch=v([^\)]+)\)\])')
+    badge = re.compile(br'(\[!\[.*?\]\(https://.*?badge\.(?:svg|png)\?branch=v([^\)]+)\)\])')
     with open(fname, "rb") as f:
         description = f.read()
     re_badge = badge.search(description)

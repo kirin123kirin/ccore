@@ -7,10 +7,6 @@ from glob import glob
 from timeit import timeit
 from psutil import Process
 from datetime import datetime, timezone, timedelta
-if os.name == 'nt':
-    import _locale
-    _locale._getdefaultlocale_backup = _locale._getdefaultlocale
-    _locale._getdefaultlocale = (lambda *args: (_locale._getdefaultlocale_backup()[0], 'UTF-8'))
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
@@ -50,7 +46,10 @@ def runtimeit(funcstr, number=10000):
 
         am = (memusage() - bm)
         assert am < 10000, "{} function {}KB Memory Leak Error".format(fc, am)
-        print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
+        try:
+            print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
+        except UnicodeEncodeError:
+            print("<UnicodeError text>: {} ns (mem after {}KB)".format(int(1000000000 * p / number), am))
         i += 1
 
 
