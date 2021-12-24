@@ -1,8 +1,6 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-os.environ["PYTHONIOENCODING"] = "utf-8"
-os.environ["PYTHONLEGACYWINDOWSSTDIO"] = "utf-8"
 import sys
 from glob import glob
 from timeit import timeit
@@ -13,13 +11,15 @@ if sys.version_info[:2] >= (3, 7):
 
 # github action problem in windows default codepage 1252 environment
 # https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
-# if os.name == "nt" and sys.version_info[0] > 2:
-#     import io
-#     sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
 PY2 = sys.version_info[0] == 2
-# if PY2 and sys.getdefaultencoding().replace("-", "").lower() != "utf8":
-#     reload(sys)
-#     sys.setdefaultencoding('utf-8')
+if PY2:
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+elif os.name == "nt":
+    print("hoge", sys.stdout.encoding)
+    # import io
+    # sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
+    sys.stdout.reconfigure(encoding='utf-8')
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
