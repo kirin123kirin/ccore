@@ -2,12 +2,8 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-if sys.platform== 'win32':
-    import codecs
-    try:
-        codecs.lookup('utf-8')
-    except LookupError:
-        pass
+import io
+sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='cp1252')
 from glob import glob
 from timeit import timeit
 from psutil import Process
