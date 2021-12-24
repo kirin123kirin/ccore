@@ -58,7 +58,7 @@ def runtimeit(funcstr, number=10000):
 def test_flatten():
     assert(flatten([[1, 2], [3, 4], [[5, 6]]]) == [1, 2, 3, 4, 5, 6])
     assert(flatten("abc") == ['a', 'b', 'c'])
-    assert(flatten("あいう") == ['あ', 'い', 'う'])
+    assert(flatten(u"あいう") == [u'あ', u'い', u'う'])
     assert(flatten(1) == [1])
     runtimeit('flatten([[1,2], [3,4], [[5, 6]]])')
 
@@ -70,13 +70,13 @@ def test_listify():
 
 def test_to_hankaku():
     assert(to_hankaku("１２３") == '123')
-    assert(to_hankaku("1あ!#ア ２") == "1あ!#ｱ 2")
+    assert(to_hankaku(u"1あ!#ア ２") == u"1あ!#ｱ 2")
     runtimeit('to_hankaku("１")')
 
 
 def test_to_zenkaku():
     assert(to_zenkaku("1") == "１")
-    assert(to_zenkaku("1あア!# ２") == "１あア！＃　２")
+    assert(to_zenkaku(u"1あア!# ２") == u"１あア！＃　２")
     assert(to_zenkaku("\"") == "＂")
     runtimeit('to_zenkaku("1")')
 
@@ -96,12 +96,12 @@ def test_guesstype():
             print(basename, lookuptype(f.read(256)))
 
 def test_kanji2int():
-    assert(kanji2int("一億２千") == "100002000")
-    runtimeit('kanji2int("一億２千")')
+    assert(kanji2int(u"一億２千") == "100002000")
+    runtimeit('kanji2int(u"一億２千")')
 
 
 def test_int2kanji():
-    assert(int2kanji(123456789) == "一億二千三百四十五万六千七百八十九")
+    assert(int2kanji(123456789) == u"一億二千三百四十五万六千七百八十九")
     runtimeit('int2kanji(123456789)')
 
 
@@ -185,16 +185,16 @@ def test_to_datetime():
         assert(to_datetime('2006-03-14T13:27+03:45') == datetime(2006, 3, 14, 13, 27))
         assert(to_datetime('14/Mar/2006:13:27:54 -0537') == datetime(2006, 3, 14, 13, 27, 54))
         assert(to_datetime('Sat, 14 Mar 2006 13:27:54 GMT') == datetime(2006, 3, 14, 13, 27, 54))
-        assert(to_datetime('平成１３年８月２４日　午後八時十分') == datetime(2001, 8, 24, 20, 10))
-        assert(to_datetime('平成13年08月24日PM 08:10') == datetime(2001, 8, 24, 20, 10))
-        assert(to_datetime('H13年08月24日　PM08:10') == datetime(2001, 8, 24, 20, 10))
-        assert(to_datetime('平13年08月24日　午後8:10') == datetime(2001, 8, 24, 20, 10))
-        assert(to_datetime('平成13年08/24午後08:10') == datetime(2001, 8, 24, 20, 10))
-        assert(to_datetime('平成元年０８月２４日　２０時１０分００秒') == datetime(1989, 8, 24, 20, 10))
-        assert(to_datetime("平成一年一月十一日") == datetime(1989, 1, 11))
-        assert(to_datetime('天正10年6月2日') == datetime(1582, 6, 2))
+        assert(to_datetime(u'平成１３年８月２４日　午後八時十分') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime(u'平成13年08月24日PM 08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime(u'H13年08月24日　PM08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime(u'平13年08月24日　午後8:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime(u'平成13年08/24午後08:10') == datetime(2001, 8, 24, 20, 10))
+        assert(to_datetime(u'平成元年０８月２４日　２０時１０分００秒') == datetime(1989, 8, 24, 20, 10))
+        assert(to_datetime(u"平成一年一月十一日") == datetime(1989, 1, 11))
+        assert(to_datetime(u'天正10年6月2日') == datetime(1582, 6, 2))
 
-    test = """
+    test = u"""
     ====== ここからWikipediaの織田信長から引用文 ======
     織田 信長（おだ のぶなが、天文3年5月12日〈1534年6月23日〉 - 天正10年6月2日〈1582年6月21日〉）は、
     日本の戦国時代から安土桃山時代にかけての武将、戦国大名。三英傑の一人。
@@ -230,7 +230,7 @@ def test_to_datetime():
 
     """
 
-    ans = """
+    ans = u"""
     ====== ここからWikipediaの織田信長から引用文 ======
     織田 信長（おだ のぶなが、1534/05/12 00:00:00〈1534/06/23 00:00:00〉 - 1582/06/02 00:00:00〈1582/06/21 00:00:00〉）は、
     日本の戦国時代から安土桃山時代にかけての武将、戦国大名。三英傑の一人。
@@ -267,9 +267,9 @@ def test_to_datetime():
     """
     assert(normalized_datetime(test) == ans)
 
-    runtimeit('to_datetime("平成13年08月24日PM 08:10")')
-    runtimeit('normalized_datetime("hogegefooほげ平成13年08月24日PM 08:10むう")')
-    runtimeit('extractdate("hogegefooほげ平成13年08月24日PM 08:10むう")')
+    runtimeit('to_datetime(u"平成13年08月24日PM 08:10")')
+    runtimeit('normalized_datetime(u"hogegefooほげ平成13年08月24日PM 08:10むう")')
+    runtimeit('extractdate(u"hogegefooほげ平成13年08月24日PM 08:10むう")')
 
 def _test_expect_ValueError(val):
     try:
