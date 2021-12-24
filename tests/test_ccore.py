@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import io
-sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
+if os.name == "nt" and sys.version_info()[0] > 2:
+    import io
+    sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
+if sys.version_info()[0] == 2 and sys.getdefaultencoding().replace("-", "").lower() != "utf8":
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
 from glob import glob
 from timeit import timeit
 from psutil import Process
