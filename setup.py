@@ -23,11 +23,11 @@ BUILD_DIR = "build"
 # https://scikit-build.readthedocs.io/en/stable/usage.html#usage-scikit-build-options
 cmake_args = {
     "common": [
-        '-G', "Ninja",
+        # '-G', "Ninja",
         # '-G', "Visual Studio 16 2019",
-        "-DCMAKE_C_COMPILER=clang",
-        "-DCMAKE_CXX_COMPILER=clang++",
-        "-DCMAKE_LINKER=lld",
+        #"-DCMAKE_C_COMPILER=clang",
+        #"-DCMAKE_CXX_COMPILER=clang++",
+        #"-DCMAKE_LINKER=lld",
 
     ],
     "windows": [
