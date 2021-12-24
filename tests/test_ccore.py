@@ -8,10 +8,10 @@ from psutil import Process
 from datetime import datetime
 if sys.version_info[:2] >= (3, 7):
     from datetime import timezone, timedelta
+PY2 = sys.version_info[0] == 2
 
 # github action problem in windows default codepage 1252 environment
 # https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
-PY2 = sys.version_info[0] == 2
 defaultencoding = 'utf-8'
 if sys.stdout.encoding != defaultencoding:
     if PY2:
