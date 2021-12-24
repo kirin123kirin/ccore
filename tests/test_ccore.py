@@ -12,14 +12,13 @@ if sys.version_info[:2] >= (3, 7):
 # github action problem in windows default codepage 1252 environment
 # https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
 PY2 = sys.version_info[0] == 2
-if PY2:
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-elif os.name == "nt":
-    print("hoge", sys.stdout.encoding)
-    # import io
-    # sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
-    sys.stdout.reconfigure(encoding='utf-8')
+defaultencoding = 'utf-8'
+if sys.stdout.encoding != defaultencoding:
+    if PY2:
+        reload(sys)
+        sys.setdefaultencoding(defaultencoding)
+    elif os.name == "nt":
+        sys.stdout.reconfigure(encoding=defaultencoding)
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
