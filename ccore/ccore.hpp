@@ -534,9 +534,23 @@ class Kansuji {
             return NULL;
         return ks.data_;
     }
-    static PyObject* kanji2int(PyObject* u) {
+    static PyObject* kanji2int(PyObject* o) {
         Py_ssize_t len;
-        data_type wdat = PyUnicode_AsWideCharString(u, &len);
+        data_type wdat;
+
+#if PY_MAJOR_VERSION == 2
+        if(PyString_Check(o)) {
+            PyObject* u = PyObject_Unicode(o);
+#else
+        if(PyBytes_Check(o)) {
+            PyObject* u = PyObject_CallMethod(o, "decode", NULL);
+#endif
+            wdat = PyUnicode_AsWideCharString(u, &len);
+            Py_DECREF(u);
+        } else {
+            wdat = PyUnicode_AsWideCharString(o, &len);
+        }
+
         if(wdat == NULL)
             return NULL;
 
