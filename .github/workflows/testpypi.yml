@@ -89,21 +89,21 @@ jobs:
                path:           dist
                retention-days: 1
 
-  publish:
-     needs: [ build_python ]
-     runs-on: ubuntu-latest
-     steps:
-        -
-           name: download dist from artifact
-           uses: actions/download-artifact@v2
-           with:
-              name: dist
-        -
-           name:  Publish PyPI
-           shell: bash
-           env:
-              TEST_PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
-              TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
-           run:   |
-                  pip install twine
-                  twine upload --verbose --skip-existing -u "$TEST_PYPI_USERNAME" -p "$TEST_PYPI_PASSWORD" --repository-url https://test.pypi.org/legacy/ ./*
+   publish:
+      needs: [ build_python ]
+      runs-on: ubuntu-latest
+      steps:
+         -
+            name: download dist from artifact
+            uses: actions/download-artifact@v2
+            with:
+               name: dist
+         -
+            name:  Publish PyPI
+            shell: bash
+            env:
+               TEST_PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
+               TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+            run:   |
+                   pip install twine
+                   twine upload --verbose --skip-existing -u "$TEST_PYPI_USERNAME" -p "$TEST_PYPI_PASSWORD" --repository-url https://test.pypi.org/legacy/ ./*
