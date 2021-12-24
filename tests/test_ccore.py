@@ -54,12 +54,9 @@ def memusage():
 
 def runtimeit(funcstr, number=10000):
     i = 0
-    kw = {"number": number}
+    kw["number"] = number
     if sys.version_info[0] >= 3:
         kw["globals"] = globals()
-    print("hoge", kw)
-    print("hoge", sys.getdefaultencoding())
-
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
