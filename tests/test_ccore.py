@@ -19,8 +19,10 @@ sys.path.insert(0, pjoin(shome, "build", "cmake-install"))
 sys.path.insert(0, pjoin(shome, "_skbuild", "cmake-install"))
 try:
     from ccore import *
+    SETUP = "from ccore import *"
 except (ImportError, ModuleNotFoundError):
     from _ccore import *
+    SETUP = "from _ccore import *"
 
 from socket import gethostname
 __tdpath = "/portable.app/usr/share/testdata/"
@@ -38,12 +40,15 @@ def memusage():
 
 def runtimeit(funcstr, number=10000):
     i = 0
+    kw = {"number": number}
+    if sys.version_info[0] >= 3:
+        kw["globals"] = globals()
+    else:
+        kw["setup"] = SETUP
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
-        kw = {"number": number}
-        if sys.version_info[0] >= 3:
-            kw["globals"] = globals()
+        
         if i == 0:
             timeit(fc, **kw)
         bm = memusage()
