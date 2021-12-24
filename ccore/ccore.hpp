@@ -555,7 +555,15 @@ class Kansuji {
         return buffer;
     }
     static PyObject* int2kanji(PyObject* n) {
-        const uint64_t i = PyLong_AsUnsignedLongLong(n);
+        const Py_ssize_t i;
+#if PY_MAJOR_VERSION == 2
+        if(PyInt_Check(n))
+            i = PyInt_AsSsize_t(n);
+        else
+#endif
+        i = PyLong_AsSsize_t(n);
+        if(i < 0)
+            return PyErr_Format(PyExc_ValueError, "Cannot converting negative integer.");
         Kansuji ks;
         value_type buffer[129] = {0};
         // data_type buffer = PyMem_NEW(value_type, 129);
