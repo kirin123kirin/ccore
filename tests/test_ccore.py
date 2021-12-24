@@ -1,8 +1,13 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import os
 import sys
+if sys.platform== 'win32':
+    import codecs
+    try:
+        codecs.lookup('utf-8')
+    except LookupError:
+        pass
 from glob import glob
 from timeit import timeit
 from psutil import Process
