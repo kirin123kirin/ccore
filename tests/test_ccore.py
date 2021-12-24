@@ -3,7 +3,7 @@
 import os
 import sys
 import io
-sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='cp1252')
+sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
 from glob import glob
 from timeit import timeit
 from psutil import Process
