@@ -180,8 +180,8 @@ int flatten(PyObject*& mapping, PyObject*& iterable) {
 
     while((item = PyIter_Next(it)) != NULL) {
         /* do something with item */
-        if(PyTuple_Check(item) || PyList_Check(item) || PyDict_Check(item) || PyAnySet_Check(item) ||
-           PyGen_Check(item) || PyIter_Check(item) || PyObject_CheckBuffer(item) ||
+        if(PyTuple_Check(item) || PyList_Check(item) || PyDict_Check(item) ||
+           PyGen_Check(item) || PyIter_Check(item) || PyAnySet_Check(item) ||
            PyObject_TypeCheck(item, &PyDictItems_Type) || PyObject_TypeCheck(item, &PyDictKeys_Type) ||
            PyObject_TypeCheck(item, &PyDictValues_Type)) {
             flatten(mapping, item);

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -20,9 +20,14 @@ sys.path.insert(0, pjoin(shome, "_skbuild", "cmake-install"))
 try:
     from ccore import *
     SETUP = "from ccore import *"
-except (ImportError, ModuleNotFoundError):
-    from _ccore import *
-    SETUP = "from _ccore import *"
+except ImportError:
+    try:
+        from _ccore import *
+        SETUP = "from _ccore import *"
+    except ImportError:
+        from ccore._ccore import *
+        SETUP = "from ccore._ccore import *"
+
 
 from socket import gethostname
 __tdpath = "/portable.app/usr/share/testdata/"
@@ -77,16 +82,16 @@ def test_listify():
 
 
 def test_to_hankaku():
-    assert(to_hankaku("１２３") == '123')
+    assert(to_hankaku(u"１２３") == u'123')
     assert(to_hankaku(u"1あ!#ア ２") == u"1あ!#ｱ 2")
-    runtimeit('to_hankaku("１")')
+    runtimeit('to_hankaku(u"１")')
 
 
 def test_to_zenkaku():
-    assert(to_zenkaku("1") == "１")
+    assert(to_zenkaku(u"1") == u"１")
     assert(to_zenkaku(u"1あア!# ２") == u"１あア！＃　２")
-    assert(to_zenkaku("\"") == "＂")
-    runtimeit('to_zenkaku("1")')
+    assert(to_zenkaku(u"\"") == u"＂")
+    runtimeit('to_zenkaku(u"1")')
 
 
 def test_lookuptype():
@@ -169,11 +174,11 @@ def test_to_datetime():
     assert(to_datetime('Aug. 24, 2001 20:10') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('2001/08/24 20:10') == datetime(2001, 8, 24, 20, 10))
     assert(to_datetime('2001/08/24 2010') == datetime(2001, 8, 24, 20, 10))
-    assert(to_datetime('2001年8月24日金曜日 20:10') == datetime(2001, 8, 24, 20, 10))
-    assert(to_datetime('2001年8月24日(金) 20:10') == datetime(2001, 8, 24, 20, 10))
-    assert(to_datetime('3月 25 00:40') == datetime(1970, 3, 25, 0, 40))
-    assert(to_datetime('11月 29  2018') == datetime(2018, 11, 29))
-    assert(to_datetime('1月 16  2019') == datetime(2019, 1, 16))
+    assert(to_datetime(u'2001年8月24日金曜日 20:10') == datetime(2001, 8, 24, 20, 10))
+    assert(to_datetime(u'2001年8月24日(金) 20:10') == datetime(2001, 8, 24, 20, 10))
+    assert(to_datetime(u'3月 25 00:40') == datetime(1970, 3, 25, 0, 40))
+    assert(to_datetime(u'11月 29  2018') == datetime(2018, 11, 29))
+    assert(to_datetime(u'1月 16  2019') == datetime(2019, 1, 16))
     assert(to_datetime("1999/12/31") == datetime(1999, 12, 31))
     if sys.version_info[:2] >= (3, 7):
         assert(to_datetime('2006-03-14T13:27:54+03:45') == datetime(2006, 3, 14, 13, 27, 54, tzinfo=timezone(timedelta(hours=3, minutes=45))))
@@ -296,10 +301,10 @@ def test_error_datetime():
     _test_expect_ValueError([])
     _test_expect_ValueError([1])
     _test_expect_ValueError((1,))
-    _test_expect_ValueError(b"2020/01/01")
+    assert(to_datetime(b"2020/01/01") == datetime(2020, 1, 1))
     assert(to_datetime("") == None)
     assert(to_datetime("hoge") == None)
-    assert(to_datetime("ho123年ge") == None)
+    assert(to_datetime(u"ho123年ge") == None)
 
 if __name__ == '__main__':
     import os

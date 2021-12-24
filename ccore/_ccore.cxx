@@ -426,13 +426,25 @@ extern "C" PyObject* to_datetime_py(PyObject* self, PyObject* args, PyObject* kw
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ii", (char**)kwlist, &o, &dayfirst, &minlimit))
         return NULL;
 
-    if(PyDate_Check(o))
-        return o;
-    else if(!PyUnicode_Check(o))
-        return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)
-        return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
+    if(PyDateTime_Check(o) || PyDate_Check(o))
+        return o;
+#if PY_MAJOR_VERSION == 2
+    else if(PyString_Check(o)) {
+        PyObject* u = PyObject_Unicode(o);
+        if(u == NULL)
+            return PyErr_Format(PyExc_ValueError, "Cannot converting Unicode Data.");
+        str = PyUnicode_AsWideCharString(u, &len);
+        Py_DECREF(u);
+    }
+#endif
+    else if(PyUnicode_Check(o))
+        str = PyUnicode_AsWideCharString(o, &len);
+    else
+        return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
+
+    if(str == NULL)
+        return PyErr_Format(PyExc_ValueError, "Cannot converting Data.");
 
     res = to_datetime(str, (bool)dayfirst, minlimit);
     PyMem_Free(str);
@@ -745,8 +757,11 @@ static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MOD
     }
 
 #else
-#define PARSE_NAME(mn) \
-    init##mn(void) { (void)Py_InitModule3(MODULE_NAME_S, py_methods, MODULE_DOCS); }
+#define PARSE_NAME(mn)                                                \
+    init##mn(void) {                                                  \
+        PyDateTime_IMPORT;                                            \
+        (void)Py_InitModule3(MODULE_NAME_S, py_methods, MODULE_DOCS); \
+    }
 #define PARSE_FUNC(mn) PyMODINIT_FUNC PARSE_NAME(mn)
 #endif
 
