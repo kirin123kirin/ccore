@@ -16,7 +16,7 @@ if sys.version_info[:2] >= (3, 7):
 # if os.name == "nt" and sys.version_info[0] > 2:
 #     import io
 #     sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
-# PY2 = sys.version_info[0] == 2
+PY2 = sys.version_info[0] == 2
 # if PY2 and sys.getdefaultencoding().replace("-", "").lower() != "utf8":
 #     reload(sys)
 #     sys.setdefaultencoding('utf-8')
@@ -62,7 +62,7 @@ def runtimeit(funcstr, number=10000):
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
-        
+
         if i == 0:
             timeit(fc, **kw)
         bm = memusage()
@@ -109,7 +109,7 @@ def test_lookuptype():
     runtimeit("lookuptype(b'PK\\x03\\x04dsfal\\x00')")
 
 def test_guesstype():
-    for g in glob(tdir+"*"):
+    for g in glob(tdir + "*"):
         basename = os.path.basename(g)
         with open(g, "rb") as f:
             print(basename, lookuptype(f.read(256)))
@@ -311,6 +311,7 @@ def test_error_datetime():
     assert(to_datetime("") == None)
     assert(to_datetime("hoge") == None)
     assert(to_datetime(u"ho123年ge") == None)
+
 
 if __name__ == '__main__':
     import os
