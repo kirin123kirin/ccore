@@ -41,10 +41,13 @@ def runtimeit(funcstr, number=10000):
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
+        kw = {"number": number}
+        if sys.version_info[0] >= 3:
+            kw["globals"] = globals()
         if i == 0:
-            timeit(fc, globals=globals(), number=number)
+            timeit(fc, **kw)
         bm = memusage()
-        p = timeit(fc, globals=globals(), number=number)
+        p = timeit(fc, **kw)
 
         am = (memusage() - bm)
         assert am < 10000, "{} function {}KB Memory Leak Error".format(fc, am)
