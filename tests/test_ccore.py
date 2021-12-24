@@ -2,18 +2,19 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-if os.name == "nt" and sys.version_info[0] > 2:
-    import io
-    sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
-if sys.version_info[0] == 2 and sys.getdefaultencoding().replace("-", "").lower() != "utf8":
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
 from glob import glob
 from timeit import timeit
 from psutil import Process
 from datetime import datetime
 if sys.version_info[:2] >= (3, 7):
     from datetime import timezone, timedelta
+if os.name == "nt" and sys.version_info[0] > 2:
+    import io
+    sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
+PY2 = sys.version_info[0] == 2
+if PY2 and sys.getdefaultencoding().replace("-", "").lower() != "utf8":
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
 
 from os.path import dirname, abspath, join as pjoin
 shome = abspath(pjoin(dirname(__file__), ".."))
@@ -24,14 +25,14 @@ sys.path.insert(0, pjoin(shome, "build", "cmake-install"))
 sys.path.insert(0, pjoin(shome, "_skbuild", "cmake-install"))
 try:
     from ccore import *
-    SETUP = "from ccore import *"
+    kw = {"setup": "from ccore import *"} if PY2 else {}
 except ImportError:
     try:
         from _ccore import *
-        SETUP = "from _ccore import *"
+        kw = {"setup": "from _ccore import *"} if PY2 else {}
     except ImportError:
         from ccore._ccore import *
-        SETUP = "from ccore._ccore import *"
+        kw = {"setup": "from ccore._ccore import *"} if PY2 else {}
 
 
 from socket import gethostname
@@ -53,8 +54,6 @@ def runtimeit(funcstr, number=10000):
     kw = {"number": number}
     if sys.version_info[0] >= 3:
         kw["globals"] = globals()
-    else:
-        kw["setup"] = SETUP
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
@@ -67,10 +66,6 @@ def runtimeit(funcstr, number=10000):
         am = (memusage() - bm)
         assert am < 10000, "{} function {}KB Memory Leak Error".format(fc, am)
         print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
-        # try:
-        #     print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
-        # except UnicodeEncodeError:
-        #     print("<UnicodeError text>: {} ns (mem after {}KB)".format(int(1000000000 * p / number), am))
         i += 1
 
 
