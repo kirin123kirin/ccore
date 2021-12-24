@@ -101,7 +101,6 @@ def test_kanji2int():
 
 
 def test_int2kanji():
-    print(int2kanji(123456789))
     assert(int2kanji(123456789) == u"一億二千三百四十五万六千七百八十九")
     runtimeit('int2kanji(123456789)')
 
