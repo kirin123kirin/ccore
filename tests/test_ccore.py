@@ -8,6 +8,9 @@ from psutil import Process
 from datetime import datetime
 if sys.version_info[:2] >= (3, 7):
     from datetime import timezone, timedelta
+
+# github action problem in windows default codepage 1252 environment
+# https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
 if os.name == "nt" and sys.version_info[0] > 2:
     import io
     sys.stdout= io.open(sys.stdout.fileno(), 'w', encoding='utf-8')
@@ -54,6 +57,9 @@ def runtimeit(funcstr, number=10000):
     kw = {"number": number}
     if sys.version_info[0] >= 3:
         kw["globals"] = globals()
+    print("hoge", kw)
+    print("hoge", sys.getdefaultencoding())
+
 
     for fc in funcstr.strip().splitlines():
         fc = fc.strip()
