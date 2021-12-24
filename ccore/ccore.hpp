@@ -555,7 +555,7 @@ class Kansuji {
         return buffer;
     }
     static PyObject* int2kanji(PyObject* n) {
-        const Py_ssize_t i;
+        Py_ssize_t i;
 #if PY_MAJOR_VERSION == 2
         if(PyInt_Check(n))
             i = PyInt_AsSsize_t(n);
