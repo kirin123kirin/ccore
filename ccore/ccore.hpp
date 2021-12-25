@@ -634,7 +634,7 @@ inline bool is_office(const char* b, std::size_t len) {
     if(b[0] == '\x50' && b[1] == '\x4B') {
         if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00ppt/", 4))
             return true;
-        if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.", 73) == 0)
+        if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.", 43) == 0)
             return true;
     } else if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0)
         return true;

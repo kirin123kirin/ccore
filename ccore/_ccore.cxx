@@ -1,9 +1,9 @@
 /* _ccore.cxx | MIT License | https://github.com/kirin123kirin/ccore/raw/main/LICENSE */
 #include <Python.h>
 #include <datetime.h>
-#include <libnkf.h>
 // #include <string>
 // #include <utility>
+#include "../extern/nkf/libnkf.hpp"
 #include "ccore.hpp"
 
 // extern "C" PyObject* binopen_py(PyObject* self, PyObject* args, PyObject* kwargs) {
