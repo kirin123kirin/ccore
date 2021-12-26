@@ -17,10 +17,10 @@ find_package(Python3 COMPONENTS Interpreter Development)
     find_package(PythonExtensions REQUIRED)
 
     add_library(_ccore MODULE ccore/_ccore.cxx)
-        target_include_directories(_ccore PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
-        target_link_directories(_ccore PRIVATE ${Python3_LIBRARY_DIRS} ${CMAKE_INSTALL_PREFIX}/lib)
-
-        target_link_libraries(_ccore)
+        set_target_properties(_ccore PROPERTIES LINK_SEARCH_START_STATIC ON)
+        set_target_properties(_ccore PROPERTIES LINK_SEARCH_END_STATIC ON)
+        # target_include_directories(_ccore PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
+        # target_link_directories(_ccore PRIVATE ${Python3_LIBRARY_DIRS} ${CMAKE_INSTALL_PREFIX}/lib)
 
     python_extension_module(_ccore)
 
