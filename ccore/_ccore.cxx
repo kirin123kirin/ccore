@@ -153,9 +153,29 @@ extern "C" PyObject* flatten_py(PyObject* self, PyObject* args) {
     return mapping;
 }
 
+extern "C" PyObject* which_py(PyObject* self, PyObject* args) {
+    PyObject *o;
+
+    if(!PyArg_ParseTuple(args, "O", &o))
+        return NULL;
+
+    Py_ssize_t len = -1;
+    wchar_t c[PATHMAX_LENGTH] = {0};
+    if(o == NULL || (len = PyUnicode_AsWideChar(o, c, PATHMAX_LENGTH)) == NULL)
+        return NULL;
+
+    wchar_t res[PATHMAX_LENGTH] = {0};
+
+    if(which(c, len, res))
+        return PyUnicode_FromWideChar(res, -1);
+    
+    Py_RETURN_NONE;
+
+}
+
 extern "C" PyObject* listify_py(PyObject* self, PyObject* args) {
     PyObject *iterable, *mapping;
-    if(!PyArg_UnpackTuple(args, "_count_elements", 1, 1, &iterable))
+    if(!PyArg_ParseTuple(args, "O", &iterable))
         return NULL;
 
     if(iterable == NULL)
@@ -685,10 +705,10 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
 // this module description
 #define MODULE_DOCS "\n"
 
-// #define binopen_DESC "Always binary mode open\n"
-#define flatten_DESC "Always return 1D array(flatt list) object\n"
-#define listify_DESC "Always return list object.\n"
 #define getencoding_DESC "guess encoding from binary data.\n"
+#define flatten_DESC "Always return 1D array(flatt list) object\n"
+#define which_DESC "like GNU which command\n"
+#define listify_DESC "Always return list object.\n"
 #define to_hankaku_DESC "from zenkaku data to hankaku data.\n"
 #define to_zenkaku_DESC "from hankaku data to zenkaku data.\n"
 #define kanji2int_DESC "from kanji num char to arabic num char.\n"
@@ -723,9 +743,9 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
  * https://docs.python.org/ja/3/c-api/structures.html#c.PyMethodDef
  */
 static PyMethodDef py_methods[] = {
-    // PY_ADD_METHOD_KWARGS("binopen", binopen_py, binopen_DESC),
     PY_ADD_METHOD("getencoding", guess_encoding_py, getencoding_DESC),
     PY_ADD_METHOD("flatten", flatten_py, flatten_DESC),
+    PY_ADD_METHOD("which", which_py, which_DESC),
     PY_ADD_METHOD("listify", listify_py, listify_DESC),
     PY_ADD_METHOD("to_hankaku", to_hankaku_py, to_hankaku_DESC),
     PY_ADD_METHOD("to_zenkaku", to_zenkaku_py, to_zenkaku_DESC),

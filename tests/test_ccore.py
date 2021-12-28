@@ -80,6 +80,10 @@ def test_flatten():
     assert(flatten(1) == [1])
     runtimeit('flatten([[1,2], [3,4], [[5, 6]]])')
 
+def test_which():
+    assert(which("find").lower() in ["c:\\windows\\system32\\find.exe", "/usr/bin/find", "/bin/find"])
+    runtimeit('which("find")')
+
 
 def test_listify():
     assert(listify("1") == ['1'])

@@ -22,30 +22,29 @@
 #define PyUnicode_KIND(x) 2
 #define PyUnicode_READY(x) true
 
-wchar_t* PyUnicode_AsWideCharString(PyObject *unicode, Py_ssize_t *size) {
-    if (unicode == NULL) {
+wchar_t* PyUnicode_AsWideCharString(PyObject* unicode, Py_ssize_t* size) {
+    if(unicode == NULL) {
         PyErr_BadInternalCall();
         return NULL;
     }
 
     Py_ssize_t buflen = PyUnicode_GetSize(unicode);
-    const wchar_t *wstr = (const wchar_t *)PyUnicode_AsUnicode(unicode);
-    if (wstr == NULL) {
+    const wchar_t* wstr = (const wchar_t*)PyUnicode_AsUnicode(unicode);
+    if(wstr == NULL) {
         return NULL;
     }
-    if (size == NULL && wcslen(wstr) != (size_t)buflen) {
-        PyErr_SetString(PyExc_ValueError,
-                        "embedded null character");
+    if(size == NULL && wcslen(wstr) != (size_t)buflen) {
+        PyErr_SetString(PyExc_ValueError, "embedded null character");
         return NULL;
     }
 
-    wchar_t *buffer = PyMem_NEW(wchar_t, buflen + 1);
-    if (buffer == NULL) {
+    wchar_t* buffer = PyMem_NEW(wchar_t, buflen + 1);
+    if(buffer == NULL) {
         PyErr_NoMemory();
         return NULL;
     }
     memcpy(buffer, wstr, (buflen + 1) * sizeof(wchar_t));
-    if (size != NULL)
+    if(size != NULL)
         *size = buflen;
     return buffer;
 }
@@ -60,6 +59,8 @@ wchar_t* PyUnicode_AsWideCharString(PyObject *unicode, Py_ssize_t *size) {
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
+
+#define PATHMAX_LENGTH 1024
 
 #undef max
 template <class T>
@@ -180,10 +181,9 @@ int flatten(PyObject*& mapping, PyObject*& iterable) {
 
     while((item = PyIter_Next(it)) != NULL) {
         /* do something with item */
-        if(PyTuple_Check(item) || PyList_Check(item) || PyDict_Check(item) ||
-           PyGen_Check(item) || PyIter_Check(item) || PyAnySet_Check(item) ||
-           PyObject_TypeCheck(item, &PyDictItems_Type) || PyObject_TypeCheck(item, &PyDictKeys_Type) ||
-           PyObject_TypeCheck(item, &PyDictValues_Type)) {
+        if(PyTuple_Check(item) || PyList_Check(item) || PyDict_Check(item) || PyGen_Check(item) || PyIter_Check(item) ||
+           PyAnySet_Check(item) || PyObject_TypeCheck(item, &PyDictItems_Type) ||
+           PyObject_TypeCheck(item, &PyDictKeys_Type) || PyObject_TypeCheck(item, &PyDictValues_Type)) {
             flatten(mapping, item);
         } else {
             PyList_Append(mapping, item);
@@ -201,6 +201,103 @@ int flatten(PyObject*& mapping, PyObject*& iterable) {
         /* continue doing useful work */
         return 1;
     }
+}
+bool executable_exists(const wchar_t* path, std::size_t pathlen, wchar_t* result) {
+#if IS_WIN
+    if(&path != &result && memcpy_s(result, PATHMAX_LENGTH, path, pathlen * sizeof(wchar_t)))
+        return false;
+
+    if(result[pathlen - 4] == L'.') {
+        struct _stat buf;
+        return _wstat(result, &buf) == 0 && (buf.st_mode & _S_IFMT) != _S_IFDIR;
+    }
+
+    wchar_t* r = result + pathlen;
+    *r = L'.';
+    *(r + 1) = L'?';
+    *(r + 2) = L'?';
+    *(r + 3) = L'?';
+
+    WIN32_FIND_DATAW fd;
+    HANDLE h = FindFirstFileW(result, &fd);
+
+    if(h == INVALID_HANDLE_VALUE)
+        return false;
+
+    do {
+        auto filelen = wcsnlen_s(fd.cFileName, 256);
+        if(fd.cFileName[filelen - 4] == L'.') {
+            for(auto&& ext : {L".exe", L".bat", L".cmd", L".vbs", L".wsh"}) {
+                auto extsize = 4 * sizeof(wchar_t);
+                if((memcmp(fd.cFileName + filelen - 4, ext, extsize)) == 0) {
+                    FindClose(h);
+                    auto r_capacitysize = (PATHMAX_LENGTH - pathlen - 4) * sizeof(wchar_t);
+                    return memcpy_s(r, r_capacitysize, ext, extsize) == 0;
+                }
+            }
+        }
+    } while(FindNextFileW(h, &fd));
+    FindClose(h);
+
+#else
+    struct stat buf;
+    if(wstat(path, &buf) == 0) {
+        if(&path != &result && memcpy_s(result, PATHMAX_LENGTH - pathlen - 4, ext, 4))
+            return false;
+        return buf.st_mode & S_IXUSR;
+    }
+#endif
+    return false;
+}
+
+/* https://github.com/Alpakka31/which/blob/main/which.c */
+bool which(const wchar_t* cmd, std::size_t cmdlen, wchar_t* result) {
+    if(cmdlen == (std::size_t)-1 || cmdlen == 0)
+        return false;
+    const std::size_t charsize = sizeof(wchar_t);
+    const std::size_t bufsize = PATHMAX_LENGTH * charsize;
+    const std::size_t cmdsize = cmdlen * charsize;
+
+#if IS_WIN
+    wchar_t ossep = L'\\';
+    const wchar_t delim = L';';
+    if(wcschr(cmd, ossep) || wcschr(cmd, L'/')) {
+        if(executable_exists(cmd, cmdlen, result))
+            return true;
+    } else {
+        const wchar_t* p = _wgetenv(L"PATH");
+#else
+    wchar_t ossep = L'/';
+    const wchar_t delim = L':';
+    if(wcschr(cmd, ossep) && executable_exists(cmd)) {
+        return memcpy_s(result, bufsize, cmd, cmdsize) == 0;
+    } else {
+        const wchar_t* p = wgetenv(L"PATH");
+#endif
+        if(p == NULL)
+            return false;
+
+        wchar_t* r = result;
+
+        while(*p) {
+            if(*p == delim || *(p + 1) == NULL) {
+                *r++ = ossep;
+                if(memcpy_s(r, bufsize - cmdsize, cmd, cmdsize))
+                    return false;
+                auto rlen = r + cmdlen - result;
+                if(executable_exists(result, rlen, result))
+                    return true;
+
+                memset(result, 0, rlen * sizeof(wchar_t));
+                r = result;
+                ++p;
+            }
+            *r++ = *p++;
+        }
+    }
+
+    *result = NULL;
+    return false;
 }
 
 static py_ustring to_hankaku(const wchar_t* data, std::size_t len) {
@@ -575,7 +672,7 @@ class Kansuji {
             i = PyInt_AsSsize_t(n);
         else
 #endif
-        i = PyLong_AsSsize_t(n);
+            i = PyLong_AsSsize_t(n);
         if(i < 0)
             return PyErr_Format(PyExc_ValueError, "Cannot converting negative integer.");
         Kansuji ks;
