@@ -173,6 +173,55 @@ extern "C" PyObject* which_py(PyObject* self, PyObject* args) {
 
 }
 
+extern "C" PyObject* Counter_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject *iterable, *res;
+    PyObject *keyfunc = NULL;
+
+    const char* kwlist[3] = {"iterable", "keyfunc", NULL};
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", (char**)kwlist, &iterable, &keyfunc))
+        return NULL;
+
+    if(iterable == Py_None)
+        PyErr_Format(PyExc_TypeError, "missing required argument 'iteraable' (pos 1)");
+    
+    if(keyfunc && !PyCallable_Check(keyfunc))
+        PyErr_Format(PyExc_TypeError, "keyfunc required callable");
+
+    if((res = PyDict_New()) == NULL)
+        return NULL;
+
+    if(Counter(res, iterable, keyfunc))
+        return res;
+    return NULL;
+}
+
+extern "C" PyObject* Grouper_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject *iterable, *res;
+    PyObject *keyfunc = NULL, *valfunc = NULL;
+
+    const char* kwlist[4] = {"iterable", "keyfunc", "valfunc", NULL};
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO", (char**)kwlist, &iterable, &keyfunc, &valfunc))
+        return NULL;
+
+    if(iterable == Py_None)
+        PyErr_Format(PyExc_TypeError, "missing required argument 'iteraable' (pos 1)");
+    
+    if(keyfunc && !PyCallable_Check(keyfunc))
+        PyErr_Format(PyExc_TypeError, "keyfunc required callable");
+
+    if(valfunc && !PyCallable_Check(valfunc))
+        PyErr_Format(PyExc_TypeError, "valfunc required callable");
+
+    if((res = PyDict_New()) == NULL)
+        return NULL;
+    
+    if (Grouper(res, iterable, keyfunc, valfunc))
+        return res;
+    return NULL;
+}
+
 extern "C" PyObject* listify_py(PyObject* self, PyObject* args) {
     PyObject *iterable, *mapping;
     if(!PyArg_ParseTuple(args, "O", &iterable))
@@ -703,11 +752,13 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
 
 /* {{{ */
 // this module description
-#define MODULE_DOCS "\n"
+#define MODULE_DOCS "hevy use function faster function by CAPI Python implementation.\n"
 
 #define getencoding_DESC "guess encoding from binary data.\n"
 #define flatten_DESC "Always return 1D array(flatt list) object\n"
-#define which_DESC "like GNU which command\n"
+#define which_DESC "like GNU which function\n"
+#define Counter_DESC "C implement Counter function\nDict Object return."
+#define Grouper_DESC "C implement like groupby function\nDict Object return."
 #define listify_DESC "Always return list object.\n"
 #define to_hankaku_DESC "from zenkaku data to hankaku data.\n"
 #define to_zenkaku_DESC "from hankaku data to zenkaku data.\n"
@@ -746,6 +797,8 @@ static PyMethodDef py_methods[] = {
     PY_ADD_METHOD("getencoding", guess_encoding_py, getencoding_DESC),
     PY_ADD_METHOD("flatten", flatten_py, flatten_DESC),
     PY_ADD_METHOD("which", which_py, which_DESC),
+    PY_ADD_METHOD_KWARGS("Counter", Counter_py, Counter_DESC),
+    PY_ADD_METHOD_KWARGS("Grouper", Grouper_py, Grouper_DESC),
     PY_ADD_METHOD("listify", listify_py, listify_DESC),
     PY_ADD_METHOD("to_hankaku", to_hankaku_py, to_hankaku_DESC),
     PY_ADD_METHOD("to_zenkaku", to_zenkaku_py, to_zenkaku_DESC),

@@ -55,6 +55,7 @@ wchar_t* PyUnicode_AsWideCharString(PyObject* unicode, Py_ssize_t* size) {
 
 #if IS_WIN
 #include <direct.h>
+#include <windows.h>
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -298,6 +299,132 @@ bool which(const wchar_t* cmd, std::size_t cmdlen, wchar_t* result) {
 
     *result = NULL;
     return false;
+}
+
+bool Counter(PyObject* mapping, PyObject* iterable, PyObject* keyfunc = NULL) {
+    PyObject *it, *oldval;
+    PyObject* row = NULL;
+    PyObject* newval = NULL;
+    PyObject* key = NULL;
+    PyObject* one = PyLong_FromLong(1);
+
+    bool is_keyfunc = keyfunc != NULL && keyfunc != Py_None;
+
+    if((it = PyObject_GetIter(iterable)) == NULL)
+        return false;
+
+    while(1) {
+        Py_hash_t hash;
+
+        if(is_keyfunc) {
+            if((row = PyIter_Next(it)) == NULL)
+                break;
+            if((key = PyObject_CallFunction(keyfunc, "(O)", row)) == NULL)
+                goto done;
+        } else {
+            if((key = PyIter_Next(it)) == NULL)
+                break;
+        }
+
+        if(!PyUnicode_CheckExact(key) || (hash = ((PyASCIIObject*)key)->hash) == -1) {
+            hash = PyObject_Hash(key);
+            if(hash == -1)
+                goto done;
+        }
+
+        if((oldval = _PyDict_GetItem_KnownHash(mapping, key, hash)) == NULL) {
+            if(!PyErr_Occurred() && _PyDict_SetItem_KnownHash(mapping, key, one, hash) < 0)
+                goto done;
+        } else {
+            newval = PyNumber_Add(oldval, one);
+            if(newval && _PyDict_SetItem_KnownHash(mapping, key, newval, hash) < 0)
+                goto done;
+            Py_CLEAR(newval);
+        }
+    }
+
+done:
+    Py_DECREF(it);
+    Py_DECREF(one);
+    Py_XDECREF(row);
+    Py_XDECREF(key);
+    Py_XDECREF(newval);
+    if(PyErr_Occurred())
+        return false;
+    return true;
+}
+
+bool Grouper(PyObject* mapping, PyObject* iterable, PyObject* keyfunc = NULL, PyObject* valfunc = NULL) {
+    PyObject* it;
+    PyObject *row = NULL, *key = NULL, *dictvalue = NULL, *val = NULL;
+    bool is_keyfunc = keyfunc != NULL && keyfunc != Py_None;
+    bool is_valfunc = valfunc != NULL && valfunc != Py_None;
+
+    it = PyObject_GetIter(iterable);
+    if(it == NULL)
+        return false;
+
+    while(1) {
+        Py_hash_t hash;
+        row = PyIter_Next(it);
+
+        if(row == NULL)
+            break;
+
+        Py_ssize_t rowlen = PyObject_Length(row);
+        if(rowlen < 2) {
+            PyErr_Format(PyExc_ValueError, "nothihng 2 elements in row");
+            goto done;
+        }
+
+        if(is_keyfunc)
+            key = PyObject_CallFunction(keyfunc, "(O)", row);
+        else
+            key = PySequence_GetItem(row, 0);
+
+        if(key == NULL)
+            goto done;
+
+        if(!PyUnicode_CheckExact(key) || (hash = ((PyASCIIObject*)key)->hash) == -1) {
+            if((hash = PyObject_Hash(key)) == -1)
+                goto done;
+        }
+
+        if(is_valfunc)
+            val = PyObject_CallFunction(valfunc, "(O)", row);
+        else
+            val = rowlen == 2 ? PySequence_GetItem(row, 1) : PySequence_GetSlice(row, 1, rowlen);
+
+        if(val == NULL)
+            goto done;
+
+        bool needclear = false;
+
+        if((dictvalue = _PyDict_GetItem_KnownHash(mapping, key, hash)) == NULL) {
+            dictvalue = PyList_New(0);
+            needclear = true;
+        }
+
+        int r = PyList_Append(dictvalue, val);
+        Py_XDECREF(val);
+        if(r == 0 && _PyDict_SetItem_KnownHash(mapping, key, dictvalue, hash) < 0)
+            goto done;
+        
+        if(needclear)
+            Py_CLEAR(dictvalue);
+        
+        Py_CLEAR(key);
+        key = NULL;
+    }
+
+done:
+    Py_DECREF(it);
+    Py_XDECREF(key);
+    Py_XDECREF(row);
+    Py_XDECREF(dictvalue);
+    if(PyErr_Occurred())
+        return false;
+    return true;
 }
 
 static py_ustring to_hankaku(const wchar_t* data, std::size_t len) {

@@ -84,6 +84,46 @@ def test_which():
     assert(which("find").lower() in ["c:\\windows\\system32\\find.exe", "/usr/bin/find", "/bin/find"])
     runtimeit('which("find")')
 
+def test_Counter():
+    assert(Counter([1,2,2,3,4]) == {1: 1, 2: 2, 3: 1, 4: 1})
+    assert(Counter([(1,2), (1,3), (2, 1, 4), (3, None)]) == {(1, 2): 1, (1, 3): 1, (2, 1, 4): 1, (3, None): 1})
+    assert(Counter([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: x) == {(1, 2): 1, (1, 3): 1, (2, 1, 4): 1, (3, None): 1})
+    assert(Counter([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: x[0]) == {1: 2, 2: 1, 3: 1})
+    runtimeit("Counter([1,2,2,3,4])")
+    runtimeit("Counter([(1,2), (1,3), (2, 1, 4), (3, None)]) == {(1, 2): 1, (1, 3): 1, (2, 1, 4): 1, (3, None): 1}")
+    runtimeit("Counter([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: x) == {(1, 2): 1, (1, 3): 1, (2, 1, 4): 1, (3, None): 1}")
+    runtimeit("Counter([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: x[0]) == {1: 2, 2: 1, 3: 1}")
+
+def test_Counter_Errorhandle():
+    try: Counter(None)
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+    try: Counter()
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+def test_Grouper():
+    assert(Grouper([(1,2), (1,3), (2, 1, 4), (3, None)]) == {1: [2, 3], 2: [(1, 4)], 3: [None]})
+    assert(Grouper([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: f"key{x[0]}") == {'key1': [2, 3], 'key2': [(1, 4)], 'key3': [None]})
+    assert(Grouper([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: f"key{x[0]}", valfunc=lambda x:x[1]) == {'key1': [2, 3], 'key2': [1], 'key3': [None]})
+    runtimeit("Grouper([(1,2), (1,3), (2, 1, 4), (3, None)])")
+    runtimeit('Grouper([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: f"key{x[0]}")')
+    runtimeit('Grouper([(1,2), (1,3), (2, 1, 4), (3, None)], keyfunc=lambda x: f"key{x[0]}", valfunc=lambda x:x[1])')
+
+def test_Grouper_Errorhandle():
+    try: Grouper([1,2,3])
+    except ValueError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+    try: Grouper(None)
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+    try: Grouper()
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
 
 def test_listify():
     assert(listify("1") == ['1'])

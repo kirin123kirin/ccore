@@ -1,6 +1,8 @@
 from ._ccore import getencoding  # noqa: F401
 from ._ccore import flatten  # noqa: F401
 from ._ccore import which  # noqa: F401
+from ._ccore import Counter  # noqa: F401
+from ._ccore import Grouper  # noqa: F401
 from ._ccore import listify  # noqa: F401
 from ._ccore import to_hankaku  # noqa: F401
 from ._ccore import to_zenkaku  # noqa: F401

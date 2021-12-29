@@ -1,5 +1,5 @@
 # ccore  by Python CAPI Extention Library
-[![Upload pypi.org](https://github.com/kirin123kirin/ccore/actions/workflows/pypi.yml/badge.svg?branch=v0.2.9)](https://github.com/kirin123kirin/ccore/actions/workflows/pypi.yml)
+[![Upload pypi.org](https://github.com/kirin123kirin/ccore/actions/workflows/pypi.yml/badge.svg?branch=v0.3.0)](https://github.com/kirin123kirin/ccore/actions/workflows/pypi.yml)
 
 # Overview
 TODO
