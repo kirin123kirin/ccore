@@ -435,3 +435,5 @@ tests/_*
 * copy*
 
 ccore.init*
+!tests/data/*
+tests/data/__pycache__

@@ -7,7 +7,6 @@ recursive-include tools *.py
 recursive-include extern *
 recursive-include resource *.const
 recursive-include ccore *.py *.cxx *.cpp *.hpp *.h *.c
-include tests/test_*
 global-exclude __pycache__
 global-exclude .coverage
 global-exclude  *.py[co]

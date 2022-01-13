@@ -4,6 +4,7 @@
 #pragma once
 #ifndef CCORE_HPP
 #define CCORE_HPP
+#define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
 #include <datetime.h>
@@ -16,6 +17,11 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "../extern/nkf/libnkf.hpp"
+#undef _Py_static_string_init
+#define _Py_static_string_init(value) \
+    { NULL, value, NULL }
 
 #if PY_MAJOR_VERSION == 2
 #define PyUnicode_DATA PyUnicode_AS_DATA
@@ -51,10 +57,17 @@ wchar_t* PyUnicode_AsWideCharString(PyObject* unicode, Py_ssize_t* size) {
 
 #endif
 
+#if PY_MAJOR_VERSION == 3
+#define PyInteger_Check(o) PyLong_Check(o)
+#else
+#define PyInteger_Check(o) PyLong_Check(o) || PyInt_Check(o)
+#endif
+
 #define IS_WIN _WIN32 || _WIN64
 
 #if IS_WIN
 #include <direct.h>
+#include <shlobj.h>
 #include <windows.h>
 #else
 #include <sys/stat.h>
@@ -90,6 +103,72 @@ struct PyMallocator {
 
     bool operator!=(const PyMallocator<T>&) { return false; }
 };
+
+// thanks for http://stackoverflow.com/questions/478898
+std::wstring exec(const char* cmd) {
+    wchar_t buffer[128];
+    std::wstring result = L"";
+#if IS_WIN
+    FILE* pipe = _popen(cmd, "r");
+#else
+    FILE* pipe = popen(cmd, "r");
+#endif
+    if(!pipe)
+        throw std::runtime_error("popen() failed!");
+    try {
+        while(fgetws(buffer, sizeof buffer, pipe) != NULL) {
+            result += buffer;
+        }
+    } catch(...) {
+#if IS_WIN
+        _pclose(pipe);
+#else
+        pclose(pipe);
+#endif
+        throw;
+    }
+#if IS_WIN
+    _pclose(pipe);
+#else
+    pclose(pipe);
+#endif
+    return result;
+}
+std::wstring exec(const wchar_t* cmd) {
+    wchar_t buffer[128];
+    std::wstring result = L"";
+#if IS_WIN
+    FILE* pipe = _wpopen(cmd, L"r");
+#else
+    FILE* pipe = wpopen(cmd, L"r");
+#endif
+    if(!pipe)
+        throw std::runtime_error("popen() failed!");
+    try {
+        while(fgetws(buffer, sizeof buffer, pipe) != NULL) {
+            result += buffer;
+        }
+    } catch(...) {
+#if IS_WIN
+        _pclose(pipe);
+#else
+        pclose(pipe);
+#endif
+        throw;
+    }
+#if IS_WIN
+    _pclose(pipe);
+#else
+    pclose(pipe);
+#endif
+    return result;
+}
+std::wstring exec(const std::string& cmd) {
+    return exec(cmd.data());
+}
+std::wstring exec(const std::wstring& cmd) {
+    return exec(cmd.data());
+}
 
 using py_ustring = std::basic_string<wchar_t, std::char_traits<wchar_t>, PyMallocator<wchar_t>>;
 
@@ -170,6 +249,522 @@ const char* memstr(const char* str, size_t str_size, const char* target, size_t 
     }
 
     return NULL;
+}
+
+template <class... Args>
+inline bool is_contains(const char* tpname, Args... args) {
+    for(auto x : std::initializer_list<const char*>{args...}) {
+        if(strncmp(tpname, x, 18) == 0)
+            return true;
+    }
+    return false;
+}
+
+static inline bool is_httpurl(const char* url) {
+    std::size_t len = strnlen(url, 1024);
+    if(len == 1024)
+        return false;
+    len *= sizeof(char);
+    if(memstr(url, len, "http://", 7 * sizeof(char)))
+        return true;
+    if(memstr(url, len, "https://", 8 * sizeof(char)))
+        return true;
+    if(memstr(url, len, "ftp://", 6 * sizeof(char)))
+        return true;
+    return false;
+}
+
+static inline PyObject* urlopen(PyObject* o) {
+    _Py_IDENTIFIER(urlopen);
+    _Py_IDENTIFIER(Request);
+    PyObject* ioMod = PyImport_ImportModule("urllib.request");
+    PyObject* req =
+        _PyObject_CallMethodId(ioMod, &PyId_Request, "OO{s:s}", o, Py_None, "User-Agent",
+                               "Mozilla/5.0 (Windows NT x.y; Win64; x64; rv:10.0) Gecko/20100101 Firefox/10.0");
+    PyObject* openedFile = _PyObject_CallMethodId(ioMod, &PyId_urlopen, "O", req ? req : o);
+    Py_DECREF(ioMod);
+    Py_XDECREF(req);
+    PyErr_Clear();
+    return openedFile;
+}
+
+PyObject* binopen(PyObject* o,
+                  const char* mode,
+                  int buffering,
+                  PyObject* encoding,
+                  PyObject* errors,
+                  PyObject* newline,
+                  PyObject* closefd,
+                  PyObject* _opener) {
+    PyObject *ioMod, *openedFile = NULL, *cn;
+    _Py_IDENTIFIER(open);
+    _Py_IDENTIFIER(encode);
+    _Py_IDENTIFIER(BytesIO);
+    _Py_IDENTIFIER(name);
+    char* dat = NULL;
+    Py_ssize_t len = -1;
+
+    if((PyUnicode_Check(o) && (dat = (char*)PyUnicode_AsUTF8AndSize(o, &len)) != NULL) ||
+       (PyBytes_Check(o) && PyBytes_AsStringAndSize(o, &dat, &len) != -1)) {
+#if IS_WIN
+        if(len < 256 && memchr(dat, '\n', (std::size_t)len) == NULL && memchr(dat, '\0', (std::size_t)len) == NULL &&
+           memchr(dat, '?', (std::size_t)len) == NULL && memchr(dat, '*', (std::size_t)len) == NULL)
+#else
+        if(len < 1024 && memchr(dat, '\n', (std::size_t)len) == NULL && memchr(dat, '\0', (std::size_t)len) == NULL &&
+           memchr(dat, '?', (std::size_t)len) == NULL && memchr(dat, '*', (std::size_t)len) == NULL)
+#endif
+        {
+            if(len > 10 && is_httpurl(dat))
+                return urlopen(o);
+
+            ioMod = PyImport_ImportModule("_io");
+            openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsiOOOOO", o, mode, buffering, encoding, errors,
+                                                newline, closefd, _opener);
+            Py_DECREF(ioMod);
+            return openedFile;
+        } else {
+            PyObject* ub = NULL;
+            if(PyUnicode_Check(o)) {
+                ub = _PyObject_CallMethodId(o, &PyId_encode, NULL);
+            }
+            if((ioMod = PyImport_ImportModule("_io")) != NULL) {
+                openedFile = _PyObject_CallMethodId(ioMod, &PyId_BytesIO, "O", ub ? ub : o);
+                Py_XDECREF(ub);
+                Py_DECREF(ioMod);
+                if(openedFile != NULL) {
+                    Py_INCREF(Py_None);
+                    _PyObject_SetAttrId(openedFile, &PyId_name, Py_None);
+                    return openedFile;
+                }
+            }
+        }
+    }
+
+    const char* tpname = Py_TYPE(o)->tp_name;
+
+    if(is_contains(tpname, "PosixPath", "WindowsPath", "Path", "PurePath", "PurePosixPath", "PureWindowsPath") ||
+       PyInteger_Check(o)) {
+        if((PyLong_Check(o) && PyLong_AS_LONG(o) < 3)
+#if PY_MAJOR_VERSION == 2
+           || (PyInt_Check(o) && PyInt_AsLong(o) < 3)
+#endif
+        ) {
+            return PyErr_Format(PyExc_OSError, "unexpected file descripter number.");
+        }
+        ioMod = PyImport_ImportModule("_io");
+        openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsiOOOOO", o, mode, buffering, encoding, errors,
+                                            newline, closefd, _opener);
+        Py_DECREF(ioMod);
+        return openedFile;
+    }
+    if(is_contains(tpname, "_io.BufferedReader", "HTTPResponse", "GzipFile", "BZ2File", "LZMAFile", "ZipExtFile",
+                   "ExFileObject", "DirectReader")) {
+        Py_INCREF(o);
+        return o;
+    }
+
+    if(strncmp(tpname, "_io.BytesIO", 11) == 0) {
+        Py_INCREF(o);
+        _PyObject_SetAttrId(o, &PyId_name, Py_None);
+        return o;
+    }
+
+    if(strncmp(tpname, "_io.TextIOWrapper", 17) == 0) {
+        PyObject* fname = _PyObject_GetAttrId(o, &PyId_name);
+
+        if(fname) {
+            // PyObject_CallMethod(o, "close", NULL);
+            ioMod = PyImport_ImportModule("_io");
+            openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsiOOOOO", fname, mode, buffering, encoding, errors,
+                                                newline, closefd, _opener);
+            Py_DECREF(ioMod);
+            return openedFile;
+        }
+    }
+
+    if(strncmp(tpname, "_io.StringIO", 12) == 0) {
+        PyObject* cb = NULL;
+        _Py_IDENTIFIER(encoding);
+        _Py_IDENTIFIER(getvalue);
+        if((cb = _PyObject_CallMethodId(o, &PyId_getvalue, NULL)) == NULL)
+            return NULL;
+        PyObject* enc = _PyObject_GetAttrId(o, &PyId_encoding);
+        PyObject* bio;
+        if(enc == NULL || enc == Py_None)
+            bio = _PyObject_CallMethodId(cb, &PyId_encode, NULL);
+        else
+            bio = _PyObject_CallMethodId(cb, &PyId_encode, "O", enc);
+        Py_XDECREF(enc);
+        Py_XDECREF(cb);
+        if(bio == NULL)
+            return NULL;
+
+        if((ioMod = PyImport_ImportModule("_io")) != NULL) {
+            if((openedFile = _PyObject_CallMethodId(ioMod, &PyId_BytesIO, "O", bio)) != NULL) {
+                PyObject* attrname = NULL;
+                if((attrname = _PyObject_GetAttrId(o, &PyId_name)) == NULL) {
+                    PyErr_Clear();
+                    Py_INCREF(Py_None);
+                    _PyObject_SetAttrId(openedFile, &PyId_name, Py_None);
+                } else {
+                    _PyObject_SetAttrId(openedFile, &PyId_name, attrname);
+                    Py_DECREF(attrname);
+                }
+            }
+        }
+        Py_XDECREF(bio);
+        Py_XDECREF(ioMod);
+        return openedFile;
+    }
+
+    return PyErr_Format(PyExc_ValueError, "Unknown Object %s. filename or filepointer buffer", tpname);
+}
+
+PyObject* opener(PyObject* o,
+                 const char* mode,
+                 int buffering,
+                 char* encoding,
+                 PyObject* errors,
+                 PyObject* newline,
+                 PyObject* closefd,
+                 PyObject* _opener) {
+    PyObject *ioMod = NULL, *openedFile = NULL, *cn;
+    _Py_IDENTIFIER(open);
+    _Py_IDENTIFIER(StringIO);
+    _Py_IDENTIFIER(decode);
+    _Py_IDENTIFIER(name);
+
+    char* dat = NULL;
+    Py_ssize_t len = -1;
+
+    if((PyUnicode_Check(o) && (dat = (char*)PyUnicode_AsUTF8AndSize(o, &len)) != NULL) ||
+       (PyBytes_Check(o) && PyBytes_AsStringAndSize(o, &dat, &len) != -1)) {
+#if IS_WIN
+        if(len < 256 && memchr(dat, '\n', (std::size_t)len) == NULL && memchr(dat, '\0', (std::size_t)len) == NULL &&
+           memchr(dat, '?', (std::size_t)len) == NULL && memchr(dat, '*', (std::size_t)len) == NULL)
+#else
+        if(len < 1024 && memchr(dat, '\n', (std::size_t)len) == NULL && memchr(dat, '\0', (std::size_t)len) == NULL &&
+           memchr(dat, '?', (std::size_t)len) == NULL && memchr(dat, '*', (std::size_t)len) == NULL)
+#endif
+        {
+            if(len > 10 && is_httpurl(dat))
+                return urlopen(o);
+
+            ioMod = PyImport_ImportModule("_io");
+            openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsisOOOO", o, mode, buffering, encoding, errors,
+                                                newline, closefd, _opener);
+            Py_DECREF(ioMod);
+            return openedFile;
+        } else {
+            if(PyBytes_Check(o)) {
+                if(encoding == NULL) {
+                    char* str = NULL;
+                    Py_ssize_t strlen = -1;
+                    PyBytes_AsStringAndSize(o, &str, &strlen);
+                    encoding = (char*)guess_encoding((unsigned char*)str, strlen, false);
+                }
+
+                PyObject* ub = NULL;
+                if(encoding)
+                    ub = _PyObject_CallMethodId(o, &PyId_decode, "s", encoding);
+                else
+                    ub = _PyObject_CallMethodId(o, &PyId_decode, NULL);
+                if(ub == NULL || (ioMod = PyImport_ImportModule("_io")) == NULL)
+                    return NULL;
+                openedFile = _PyObject_CallMethodId(ioMod, &PyId_StringIO, "OO", ub, newline);
+                Py_DECREF(ub);  //@note crash surukamo.
+                                // https://docs.python.org/ja/3/c-api/bytes.html#c.PyBytes_AsStringAndSize
+            } else {
+                if((ioMod = PyImport_ImportModule("_io")) == NULL)
+                    return NULL;
+                openedFile = _PyObject_CallMethodId(ioMod, &PyId_StringIO, "OO", o, newline);
+            }
+
+            Py_DECREF(ioMod);
+            if(openedFile == NULL)
+                return NULL;
+            Py_INCREF(Py_None);
+            _PyObject_SetAttrId(openedFile, &PyId_name, Py_None);
+            return openedFile;
+        }
+    }
+
+    const char* tpname = Py_TYPE(o)->tp_name;
+
+    if(is_contains(tpname, "PosixPath", "WindowsPath", "Path", "PurePath", "PurePosixPath", "PureWindowsPath") ||
+       PyInteger_Check(o)) {
+        if((PyLong_Check(o) && PyLong_AS_LONG(o) < 3)
+#if PY_MAJOR_VERSION == 2
+           || (PyInt_Check(o) && PyInt_AsLong(o) < 3)
+#endif
+        ) {
+            return PyErr_Format(PyExc_OSError, "unexpected file descripter number.");
+        }
+        ioMod = PyImport_ImportModule("_io");
+        openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsisOOOO", o, mode, buffering, encoding, errors,
+                                            newline, closefd, _opener);
+        Py_CLEAR(ioMod);
+        return openedFile;
+    }
+
+    if(strncmp(tpname, "_io.TextIOWrapper", 17) == 0) {
+        Py_INCREF(o);
+        return o;
+    }
+
+    if(strncmp(tpname, "_io.StringIO", 12) == 0) {
+        Py_INCREF(o);
+        _PyObject_SetAttrId(o, &PyId_name, Py_None);
+        return o;
+    }
+
+    if(strncmp(tpname, "_io.BufferedReader", 17) == 0) {
+        PyObject* fname = _PyObject_GetAttrId(o, &PyId_name);
+        if(fname) {
+            if(encoding == NULL) {
+                _Py_IDENTIFIER(read);
+                _Py_IDENTIFIER(seek);
+                PyObject* _seekr = _PyObject_CallMethodId(o, &PyId_seek, "i", 0);
+                Py_XDECREF(_seekr);
+                PyObject* head = _PyObject_CallMethodId(o, &PyId_read, "i", 92160);
+                if(head) {
+                    char* str = NULL;
+                    Py_ssize_t strlen = -1;
+                    PyBytes_AsStringAndSize(head, &str, &strlen);
+                    encoding = (char*)guess_encoding((unsigned char*)str, strlen, false);
+                    Py_DECREF(head);  //@note crash surukamo.
+                                      // https://docs.python.org/ja/3/c-api/bytes.html#c.PyBytes_AsStringAndSize
+                }
+            }
+            // PyObject_CallMethod(o, "close", NULL);
+            ioMod = PyImport_ImportModule("_io");
+            openedFile = _PyObject_CallMethodId(ioMod, &PyId_open, "OsisOOOO", fname, mode, buffering, encoding, errors,
+                                                newline, closefd, _opener);
+            Py_DECREF(ioMod);
+            return openedFile;
+        }
+    }
+
+    if(is_contains(tpname, "_io.BytesIO", "_io.BufferedReader")) {
+        PyObject* dat = NULL;
+        _Py_IDENTIFIER(tell);
+        _Py_IDENTIFIER(seek);
+        _Py_IDENTIFIER(read);
+        PyObject* pos = _PyObject_CallMethodId(o, &PyId_tell, NULL);
+        PyObject* _seekr1 = _PyObject_CallMethodId(o, &PyId_seek, "i", 0);
+        Py_XDECREF(_seekr1);
+        dat = _PyObject_CallMethodId(o, &PyId_read, NULL);
+        PyObject* _seekr2 = _PyObject_CallMethodId(o, &PyId_seek, "O", pos);
+        Py_XDECREF(_seekr2);
+        if(dat == NULL)
+            return NULL;
+
+        if(encoding == NULL) {
+            char* str = NULL;
+            Py_ssize_t strlen = -1;
+            PyBytes_AsStringAndSize(dat, &str, &strlen);
+            encoding = (char*)guess_encoding((unsigned char*)str, strlen, false);
+        }
+
+        PyObject* sio = _PyObject_CallMethodId(dat, &PyId_decode, "s", encoding ? encoding : "utf-8");
+        Py_XDECREF(dat);  //@note crash surukamo.
+                          // https://docs.python.org/ja/3/c-api/bytes.html#c.PyBytes_AsStringAndSize
+        if(sio == NULL)
+            return NULL;
+
+        if((ioMod = PyImport_ImportModule("_io")) != NULL) {
+            if((openedFile = _PyObject_CallMethodId(ioMod, &PyId_StringIO, "O", sio, newline)) != NULL) {
+                PyObject* attrname = NULL;
+                if((attrname = _PyObject_GetAttrId(o, &PyId_name)) == NULL) {
+                    PyErr_Clear();
+                    Py_INCREF(Py_None);
+                    _PyObject_SetAttrId(openedFile, &PyId_name, Py_None);
+                } else {
+                    _PyObject_SetAttrId(openedFile, &PyId_name, attrname);
+                    Py_DECREF(attrname);
+                }
+            }
+            Py_DECREF(ioMod);
+        }
+        Py_XDECREF(sio);
+        return openedFile;
+    }
+
+    if(is_contains(tpname, "HTTPResponse", "GzipFile", "BZ2File", "LZMAFile", "ZipExtFile", "ExFileObject",
+                   "DirectReader")) {
+        Py_INCREF(o);
+        return o;
+    }
+
+    return PyErr_Format(PyExc_ValueError, "Unknown Object %s. filename or filepointer buffer", tpname);
+}
+
+#if IS_WIN
+#define FILE_SEEK _lseek
+#define FILE_TELL _tell
+#define FILE_READ _read
+#else
+#define FILE_SEEK lseek
+#define FILE_TELL tell
+#define FILE_READ read
+#endif
+
+PyObject* headtail(PyObject* fp, Py_ssize_t bufsize) {
+    PyObject* result = NULL;
+    int len = 0;
+    PyObject* _fd;
+    int fd = -1;
+    int finsize = 0;
+    char* rbuf = NULL;
+    const std::size_t stacksize = 1024;
+    const char* tpname = Py_TYPE(fp)->tp_name;
+
+    _Py_IDENTIFIER(open);
+    _Py_IDENTIFIER(read);
+    _Py_IDENTIFIER(seek);
+    _Py_IDENTIFIER(close);
+
+    if(is_contains(tpname, "bytes", "bytearray")) {
+        len = PyObject_Length(fp);
+        if(len <= bufsize * 2 || 2 * len <= bufsize) {
+            Py_INCREF(fp);
+            return fp;
+        }
+        result = PySequence_GetSlice(fp, 0, bufsize);
+        PyBytes_ConcatAndDel(&result, PySequence_GetSlice(fp, len - bufsize, len));
+        return result;
+    }
+
+    if(is_contains(tpname, "_io.TextIOWrapper", "_io.BufferedReader")) {
+        if(bufsize > stacksize) {
+            rbuf = (char*)PyMem_Calloc(sizeof(char), (bufsize * 2) + 1);
+        } else {
+            char _rbuf[stacksize] = {0};
+            rbuf = _rbuf;
+        }
+        if(rbuf == NULL)
+            return PyErr_Format(PyExc_OverflowError, "Cannot take memory.\ntoo large buffersize?");
+        _Py_IDENTIFIER(fileno);
+        if((_fd = _PyObject_CallMethodId(fp, &PyId_fileno, NULL)) == NULL) {
+            if(bufsize > stacksize)
+                PyMem_FREE(rbuf);
+            return PyErr_Format(PyExc_BufferError, "FileDescriptor Not Found.");
+        }
+        fd = PyLong_AsLong(_fd);
+        Py_DECREF(_fd);
+        long pos = FILE_TELL(fd);
+
+        if((len = FILE_SEEK(fd, 0, SEEK_END)) == -1) {
+            if(bufsize > stacksize)
+                PyMem_FREE(rbuf);
+        } else {
+            if(len <= bufsize * 2 || 2 * len <= bufsize) {
+                if(FILE_SEEK(fd, 0, SEEK_SET) == -1) {
+                    if(bufsize > stacksize)
+                        PyMem_FREE(rbuf);
+                    FILE_SEEK(fd, pos, SEEK_SET);
+                    return PyErr_Format(PyExc_BufferError, "File reading Error.");
+                }
+                finsize += FILE_READ(fd, rbuf, len);
+                FILE_SEEK(fd, pos, SEEK_SET);
+            } else {
+                if(FILE_SEEK(fd, 0, SEEK_SET) == -1) {
+                    FILE_SEEK(fd, pos, SEEK_SET);
+                    if(bufsize > stacksize)
+                        PyMem_FREE(rbuf);
+                    return PyErr_Format(PyExc_BufferError, "File reading Error.");
+                }
+                finsize = FILE_READ(fd, rbuf, bufsize);
+
+                if(FILE_SEEK(fd, -bufsize, SEEK_END) == -1) {
+                    FILE_SEEK(fd, pos, SEEK_SET);
+                    if(bufsize > stacksize)
+                        PyMem_FREE(rbuf);
+                    return PyErr_Format(PyExc_BufferError, "File reading Error.");
+                }
+                finsize += FILE_READ(fd, rbuf + finsize, bufsize);
+                FILE_SEEK(fd, pos, SEEK_SET);
+
+                if(finsize == -1) {
+                    if(bufsize > stacksize)
+                        PyMem_FREE(rbuf);
+                    return PyErr_Format(PyExc_BufferError, "File reading Error.");
+                }
+            }
+            result = PyBytes_FromStringAndSize(rbuf, finsize);
+            if(bufsize > stacksize)
+                PyMem_FREE(rbuf);
+            return result;
+        }
+    }
+
+    PyObject *ioMod = NULL, *op = NULL, *_ret = NULL;
+
+    if((op = binopen(fp, "rb", -1, Py_None, Py_None, Py_None, Py_True, Py_None)) == NULL)
+        return NULL;
+
+    if((result = _PyObject_CallMethodId(op, &PyId_read, "i", bufsize)) == NULL) {
+        op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0) : _PyObject_CallMethodId(op, &PyId_close, NULL);
+        Py_DECREF(op);
+        return NULL;
+    }
+
+    PyObject* rd = NULL;
+
+    _ret = _PyObject_CallMethodId(op, &PyId_seek, "ii", -bufsize, 2);
+    if(_ret == NULL || (finsize = PyLong_AsLong(_ret) + bufsize) == bufsize - 1) {
+        if((rd = _PyObject_CallMethodId(op, &PyId_read, NULL)) == NULL) {
+            PyErr_Clear();
+            op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0)
+                          : _PyObject_CallMethodId(op, &PyId_close, NULL);
+            Py_DECREF(op);
+            return result;
+        }
+
+        op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0) : _PyObject_CallMethodId(op, &PyId_close, NULL);
+        Py_DECREF(op);
+
+        PyBytes_ConcatAndDel(&result, rd);
+        if((finsize = PyObject_Length(result)) == -1) {
+            Py_DECREF(result);
+            Py_XDECREF(_ret);
+            return PyErr_Format(PyExc_BufferError, "File reading Error.");
+        }
+
+        PyObject* newres = PySequence_GetSlice(result, 0, bufsize);
+        PyBytes_ConcatAndDel(&newres, PySequence_GetSlice(result, finsize - bufsize, finsize));
+        Py_DECREF(result);
+        return newres;
+    }
+    if(finsize <= bufsize * 2 || 2 * finsize <= bufsize) {
+        if((_ret = _PyObject_CallMethodId(op, &PyId_seek, "i", 0)) == NULL)
+            PyErr_Clear();
+        else
+            Py_XDECREF(_ret);
+        Py_CLEAR(result);
+        result = _PyObject_CallMethodId(op, &PyId_read, NULL);
+        _PyObject_CallMethodId(op, &PyId_seek, "i", 0);
+        op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0) : _PyObject_CallMethodId(op, &PyId_close, NULL);
+        Py_DECREF(op);
+        return result;
+    }
+
+    if((rd = _PyObject_CallMethodId(op, &PyId_read, NULL)) == NULL) {
+        PyErr_Clear();
+        op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0) : _PyObject_CallMethodId(op, &PyId_close, NULL);
+        Py_DECREF(op);
+        return result;
+    }
+    Py_XDECREF(_ret);
+    PyBytes_ConcatAndDel(&result, rd);
+    op&& op == fp ? _PyObject_CallMethodId(op, &PyId_seek, "i", 0) : _PyObject_CallMethodId(op, &PyId_close, NULL);
+    Py_DECREF(op);
+
+    if((finsize = PyObject_Length(result)) == -1) {
+        Py_DECREF(result);
+        return PyErr_Format(PyExc_BufferError, "File reading Error.");
+    }
+    return result;
 }
 
 int flatten(PyObject*& mapping, PyObject*& iterable) {
@@ -409,12 +1004,11 @@ bool Grouper(PyObject* mapping, PyObject* iterable, PyObject* keyfunc = NULL, Py
         Py_XDECREF(val);
         if(r == 0 && _PyDict_SetItem_KnownHash(mapping, key, dictvalue, hash) < 0)
             goto done;
-        
+
         if(needclear)
             Py_CLEAR(dictvalue);
-        
+
         Py_CLEAR(key);
-        key = NULL;
     }
 
 done:
@@ -425,6 +1019,229 @@ done:
     if(PyErr_Occurred())
         return false;
     return true;
+}
+
+Py_hash_t pyany_hash(PyObject* key) {
+    Py_hash_t hash = -1;
+    if(!PyUnicode_CheckExact(key)) {
+        hash = PyObject_Hash(key);
+        if(hash == -1) {
+            PyErr_Clear();
+            PyObject* tup = PySequence_Tuple(key);
+            hash = PyObject_Hash(tup);
+            Py_DECREF(tup);
+        }
+    } else if((hash = ((PyASCIIObject*)key)->hash) == -1)
+        hash = PyObject_Hash(key);
+    return (std::size_t)hash;
+}
+
+PyObject* uniq(PyObject* iterable, PyObject* keyfunc = NULL, bool select_first = true) {
+    PyObject *it, *row, *ret;
+    std::unordered_map<Py_hash_t, std::size_t, nohash<Py_hash_t>, std::equal_to<Py_hash_t>, PyMallocator<Py_hash_t>>
+        chk;
+    std::size_t i = 0, j = 0;
+
+    if((it = PyObject_GetIter(iterable)) == NULL)
+        return NULL;
+
+    if((ret = PyList_New(0)) == NULL)
+        goto done;
+
+    while(++i) {
+        Py_hash_t hash;
+        PyObject* t;
+
+        if((row = PyIter_Next(it)) == NULL)
+            goto done;
+
+        if(keyfunc) {
+            if((t = PyObject_CallFunction(keyfunc, "(O)", row)) == NULL)
+                goto done;
+            hash = pyany_hash(t);
+            Py_DECREF(t);
+        } else {
+            hash = pyany_hash(row);
+        }
+        if(hash == -1) {
+            PyErr_Format(PyExc_TypeError, "Could not hashable of '%zu' sequence data.", i);
+            goto done;
+        }
+
+        if(chk.find(hash) != chk.end()) {
+            if(select_first)
+                Py_CLEAR(row);
+            else
+                PyList_SetItem(ret, chk[hash], row);
+            continue;
+        }
+        chk.emplace(hash, j++);
+        PyList_Append(ret, row);
+
+        Py_CLEAR(row);
+    }
+done:
+    Py_DECREF(it);
+    Py_XDECREF(row);
+    if(PyErr_Occurred()) {
+        Py_XDECREF(ret);
+        return NULL;
+    }
+    return ret;
+}
+
+static PyObject* sniffer(const char* dat,
+                         std::size_t dat_len,
+                         std::size_t maxlines = 100,
+                         bool with_encoding = false,
+                         const char* delimiters = ",\t;:| ",
+                         std::size_t len_delims = 6,
+                         const char* quotechars = "\"'`",
+                         std::size_t len_quotes = 3,
+                         const char* escapechars = R"(\\^)",
+                         std::size_t len_escapes = 2,
+                         const char* lineterminators = "\r\n",
+                         std::size_t len_lineterms = 2) {
+    if(dat == NULL)
+        return PyErr_Format(PyExc_TypeError, "only byte-like or str object.");
+    if(maxlines == 0)
+        return PyErr_Format(PyExc_ValueError, "Bad argument Value : maxlines is zero.");
+    if(dat_len == 0)
+        return PyErr_Format(PyExc_ValueError, "DataSize is empty?");
+    if(dat_len == std::size_t(-1))
+        return PyErr_Format(PyExc_ValueError, "Unknown Error : Maybe Bad data type.");
+
+    char delimiter = NULL;
+    bool doublequote = true;
+    char escapechar = NULL;
+    char lineterminator[32] = {0};
+    char quotechar = NULL;
+    long quoting = 0;
+    bool skipinitialspace = false;
+    bool strict = false;
+    std::size_t mxdlm = 0, mxqt = 0;
+    std::size_t len = dat_len;
+
+    int C[127] = {0};
+
+    char* lt = lineterminator;
+    const auto* p = dat;
+    for(auto i = 0; i < len_lineterms; ++i) {
+        auto c = lineterminators[i];
+        if((p = (char*)memchr(p ? p : dat, c, len * sizeof(char))) != NULL)
+            *lt++ = c;
+    }
+    if(maxlines != std::size_t(-1) && lineterminator[0] != 0) {
+        const auto sep = *(lt - 1);
+        const auto *p = dat, *end = dat + len;
+        auto i = 0;
+        while(p++ && i++ < maxlines)
+            p = (char*)memchr(p, sep, (end - p) * sizeof(char));
+        if(p > dat)
+            len = p - dat;
+    }
+
+    for(auto i = 0; i < len; ++i) {
+        auto&& c = dat[i];
+        if(c > -1)
+            ++C[c];
+    }
+
+    for(auto i = 0; i < len_delims; ++i) {
+        const auto& c = delimiters[i];
+        const auto& n = C[c];
+        if(mxdlm < n) {
+            mxdlm = n;
+            delimiter = c;
+        }
+    }
+
+    for(auto i = 0; i < len_quotes; ++i) {
+        const auto& c = quotechars[i];
+        const auto& n = C[c];
+        if(mxqt < n && n % 2 == 0) {
+            mxqt = n;
+            quotechar = c;
+        }
+    }
+
+    if(quotechar) {
+        if((mxqt || mxdlm) && mxqt >= mxdlm * 2)
+            quoting = 1;
+
+        for(auto i = 0; i < len_escapes; ++i) {
+            const auto& c = escapechars[i];
+            if(C[c] == 0)
+                continue;
+
+            const auto* p = (const char*)memchr(dat, c, len * sizeof(const char));
+
+            if(p && *(++p) == quotechar) {
+                escapechar = c;
+                doublequote = false;
+                break;
+            }
+        }
+    }
+
+    if(delimiter) {
+        const auto* p = (const char*)memchr(dat, delimiter, len * sizeof(const char));
+        if(p && *(++p) == ' ')
+            skipinitialspace = true;
+    }
+
+    PyObject* ret = PyDict_New();
+    if(ret == NULL)
+        return NULL;
+
+    PyObject *enc, *deli, *esc, *line, *quot, *quotng;
+
+    _Py_IDENTIFIER(encoding);
+    _Py_IDENTIFIER(delimiter);
+    _Py_IDENTIFIER(doublequote);
+    _Py_IDENTIFIER(escapechar);
+    _Py_IDENTIFIER(lineterminator);
+    _Py_IDENTIFIER(quotechar);
+    _Py_IDENTIFIER(quoting);
+    _Py_IDENTIFIER(skipinitialspace);
+    _Py_IDENTIFIER(strict);
+
+    if(with_encoding) {
+        const char* encname = guess_encoding((unsigned char*)dat, len, false);
+        enc = Py_BuildValue("s", encname);
+        _PyDict_SetItemId(ret, &PyId_encoding, enc);
+        Py_DECREF(enc);
+    }
+
+    deli = Py_BuildValue("C", delimiter ? delimiter : ',');
+    _PyDict_SetItemId(ret, &PyId_delimiter, deli);
+    Py_XDECREF(deli);
+
+    _PyDict_SetItemId(ret, &PyId_doublequote,
+                      doublequote ? (Py_INCREF(Py_True), Py_True) : (Py_INCREF(Py_False), Py_False));
+
+    esc = escapechar ? Py_BuildValue("C", escapechar) : (Py_INCREF(Py_None), Py_None);
+    _PyDict_SetItemId(ret, &PyId_escapechar, esc);
+    Py_XDECREF(esc);
+
+    line = PyUnicode_FromString(lineterminator[0] ? lineterminator : "\r\n");
+    _PyDict_SetItemId(ret, &PyId_lineterminator, line);
+    Py_XDECREF(line);
+
+    quot = Py_BuildValue("C", quotechar ? quotechar : '"');
+    _PyDict_SetItemId(ret, &PyId_quotechar, quot);
+    Py_XDECREF(quot);
+
+    quotng = PyLong_FromLong(quoting);
+    _PyDict_SetItemId(ret, &PyId_quoting, quotng);
+    Py_XDECREF(quotng);
+
+    _PyDict_SetItemId(ret, &PyId_skipinitialspace,
+                      skipinitialspace ? (Py_INCREF(Py_True), Py_True) : (Py_INCREF(Py_False), Py_False));
+
+    _PyDict_SetItemId(ret, &PyId_strict, strict ? (Py_INCREF(Py_True), Py_True) : (Py_INCREF(Py_False), Py_False));
+
+    return ret;
 }
 
 static py_ustring to_hankaku(const wchar_t* data, std::size_t len) {
@@ -872,14 +1689,20 @@ inline bool is_office(const char* b, std::size_t len) {
 inline bool is_xls(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         std::size_t s = (1U << (b[30] + b[31])) * (b[48] + b[49]) + 640U;
-        if(s > len)
-            return false;
+        if(s > len) {
+            return memstr(b, len, "\x00\x57\x00\x6F\x00\x72\x00\x6B\x00\x62\x00\x6F\x00\x6F\x00\x6B\x00", 18) != NULL ||
+                   memstr(b, len, "\x00\x42\x00\x6F\x00\x6F\x00\x6B\x00", 10);
+        }
         if(b[s] == 'W' && b[s + 2] == 'o' && b[s + 4] == 'r' && b[s + 6] == 'k' && b[s + 8] == 'b' &&
            b[s + 10] == 'o' && b[s + 12] == 'o' && b[s + 14] == 'k')
             return true;
         if(b[s] == 'B' && b[s + 2] == 'o' && b[s + 4] == 'o' && b[s + 6] == 'k')
             return true;
     }
+    return false;
+}
+
+inline bool is_xlsx(const char* b, std::size_t len) {
     if(b[0] == '\x50' && b[1] == '\x4B') {
         if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00xl/", 4))
             return true;
@@ -889,28 +1712,18 @@ inline bool is_xls(const char* b, std::size_t len) {
     return false;
 }
 
-inline bool is_doc(const char* b, std::size_t len) {
-    if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
-        if(b[512] == '\xec' && b[513] == '\xa5')
-            return true;
-    }
-    if(b[0] == '\x50' && b[1] == '\x4B') {
-        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00word/", 6))
-            return true;
-        if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.text", 47) == 0)
-            return true;
-    }
-
-    return false;
-}
-
 inline bool is_ppt(const char* b, std::size_t len) {
     if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
         if(b[512] == '\xec' && b[513] == '\xa5')
             return false;
         std::size_t s = (1U << (b[30] + b[31])) * (b[48] + b[49]) + 640U;
-        if(s > len)
-            return false;
+        if(s > len) {
+            return memstr(b, len,
+                          "\x50\x00\x6F\x00\x77\x00\x65\x00\x72\x00\x50\x00\x6F\x00\x69\x00\x6E\x00\x74\x00\x20\x00\x44"
+                          "\x00"
+                          "\x6F\x00\x63\x00\x75\x00\x6D\x00\x65\x00\x6E\x00\x74",
+                          38) != NULL;
+        }
         if(b[s] == 'W' && b[s + 2] == 'o' && b[s + 4] == 'r' && b[s + 6] == 'k' && b[s + 8] == 'b' &&
            b[s + 10] == 'o' && b[s + 12] == 'o' && b[s + 14] == 'k')
             return false;
@@ -919,6 +1732,10 @@ inline bool is_ppt(const char* b, std::size_t len) {
         if(b[s])
             return true;
     }
+    return false;
+}
+
+inline bool is_pptx(const char* b, std::size_t len) {
     if(b[0] == '\x50' && b[1] == '\x4B') {
         if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 ||
            (b[30] == '\x70' && b[31] == '\x70' && b[32] == '\x74' && b[33] == '\x2f'))
@@ -926,6 +1743,25 @@ inline bool is_ppt(const char* b, std::size_t len) {
         if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.presentation", 55) == 0)
             return true;
     }
+    return false;
+}
+
+inline bool is_doc(const char* b, std::size_t len) {
+    if(memcmp(b + 0, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0) {
+        if(b[512] == '\xec' && b[513] == '\xa5')
+            return is_ppt(b, len) == false && is_xls(b, len) == false;
+    }
+    return false;
+}
+
+inline bool is_docx(const char* b, std::size_t len) {
+    if(b[0] == '\x50' && b[1] == '\x4B') {
+        if(memcmp(b + 30, "[Content_Types].xml", 19) == 0 && memstr(b, len, "\x00word/", 6))
+            return true;
+        if(memcmp(b + 30, "mimetypeapplication/vnd.oasis.opendocument.text", 47) == 0)
+            return true;
+    }
+
     return false;
 }
 
@@ -1019,19 +1855,19 @@ const char* lookuptype(const char* b, std::size_t len) {
     if(memchr(b, 0, len)) {
         if(len > 513) {
             if(b[0] == 'P' && b[1] == 'K') {
-                if(is_doc(b, len))
-                    return "docx";
-                if(is_xls(b, len))
+                if(is_xlsx(b, len))
                     return "xlsx";
-                if(is_ppt(b, len))
+                if(is_pptx(b, len))
                     return "pptx";
+                if(is_docx(b, len))
+                    return "docx";
             } else if(b[0] == '\xd0') {
-                if(is_doc(b, len))
-                    return "doc";
                 if(is_xls(b, len))
                     return "xls";
                 if(is_ppt(b, len))
                     return "ppt";
+                if(memcmp(b, "\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", 8) == 0 && b[512] == '\xec' && b[513] == '\xa5')
+                    return "doc";
             }
         }
         if(len > 262 && is_tar(b)) {
@@ -1073,6 +1909,29 @@ const char* lookuptype(const char* b, std::size_t len) {
 
     return "txt";
 };
+
+const char* guesstype(PyObject* fp, Py_ssize_t samplingsize = 2048) {
+    PyObject* o;
+    Py_ssize_t strsize;
+    char* str;
+    const char* res;
+
+    if((o = headtail(fp, samplingsize)) == NULL)
+        return NULL;
+
+    if(PyBytes_AsStringAndSize(o, &str, &strsize) == -1) {
+        Py_XDECREF(o);
+        return NULL;
+    }
+    if(strsize == 0) {
+        Py_XDECREF(o);
+        return "ZERO";
+    }
+
+    res = lookuptype(str, strsize);
+    Py_DECREF(o);  //@note crash suru kamo.
+    return res;
+}
 
 // static const std::unordered_map<wchar_t, int, nohash<wchar_t>> TRAN = {
 #include "../resource/TRAN.const"
@@ -2261,6 +3120,107 @@ std::wstring normalized_datetime(const std::wstring& str,
         i = 0;
     }
     return ret;
+}
+
+int mklink(std::string srcpath, std::string targetpath) {
+#if IS_WIN
+    std::size_t tarlen = targetpath.size();
+
+    ::CoInitialize(NULL);
+
+    HRESULT hResult = S_OK;
+    IShellLinkA* pSellLink = NULL;
+    IPersistFile* pPersistFile = NULL;
+
+    hResult = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void**)&pSellLink);
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    hResult = pSellLink->QueryInterface(IID_IPersistFile, (void**)&pPersistFile);
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    hResult = pSellLink->SetPath(srcpath.c_str());
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    if(targetpath[tarlen - 4] != '.' || std::tolower(targetpath[tarlen - 3]) != 'l' ||
+       std::tolower(targetpath[tarlen - 2]) != 'n' || std::tolower(targetpath[tarlen - 1]) != 'k')
+        hResult = pPersistFile->Save((LPCOLESTR)(targetpath + ".lnk").c_str(), TRUE);
+    else
+        hResult = pPersistFile->Save((LPCOLESTR)targetpath.c_str(), TRUE);
+
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+err:
+    if(NULL != pPersistFile)
+        pPersistFile->Release();
+
+    if(NULL != pSellLink)
+        pSellLink->Release();
+
+    ::CoUninitialize();
+    return hResult == S_OK ? 0 : 1;
+#else
+    try {
+        std::string cmd = "ln -s " + srcpath + " " + targetpath;
+        exec(cmd);
+        return 0;
+    } catch(...) {
+        return 1;
+    }
+#endif
+}
+int mklink(std::wstring srcpath, std::wstring targetpath) {
+#if IS_WIN
+    std::size_t tarlen = targetpath.size();
+
+    ::CoInitialize(NULL);
+
+    HRESULT hResult = S_OK;
+    IShellLinkW* pSellLink = NULL;
+    IPersistFile* pPersistFile = NULL;
+
+    hResult = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void**)&pSellLink);
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    hResult = pSellLink->QueryInterface(IID_IPersistFile, (void**)&pPersistFile);
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    hResult = pSellLink->SetPath(srcpath.c_str());
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+    if(targetpath[tarlen - 4] != L'.' || std::tolower(targetpath[tarlen - 3]) != L'l' ||
+       std::tolower(targetpath[tarlen - 2]) != L'n' || std::tolower(targetpath[tarlen - 1]) != L'k')
+        hResult = pPersistFile->Save((LPCOLESTR)(targetpath + L".lnk").c_str(), TRUE);
+    else
+        hResult = pPersistFile->Save((LPCOLESTR)targetpath.c_str(), TRUE);
+
+    if(!SUCCEEDED(hResult))
+        goto err;
+
+err:
+    if(NULL != pPersistFile)
+        pPersistFile->Release();
+
+    if(NULL != pSellLink)
+        pSellLink->Release();
+
+    ::CoUninitialize();
+    return hResult == S_OK ? 0 : 1;
+#else
+    try {
+        std::string cmd = L"ln -s " + srcpath + L" " + targetpath;
+        exec(cmd);
+        return 0;
+    } catch(...) {
+        return 1;
+    }
+#endif
 }
 
 #endif

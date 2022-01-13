@@ -7,6 +7,9 @@
 [submodule "extern/cxxopts"]
 	path = extern/cxxopts
 	url = https://github.com/jarro2783/cxxopts.git
+[submodule "extern/string-view-lite"]
+	path = extern/string-view-lite
+	url = https://github.com/martinmoene/string-view-lite.git
 [submodule "cmake"]
 	path = cmake
 	url = https://github.com/kirin123kirin/cmake.git

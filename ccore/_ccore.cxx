@@ -1,122 +1,177 @@
-/* _ccore.cxx | MIT License | https://github.com/kirin123kirin/ccore/raw/main/LICENSE */
+﻿/* _ccore.cxx | MIT License | https://github.com/kirin123kirin/ccore/raw/main/LICENSE */
 #include <Python.h>
 #include <datetime.h>
 // #include <string>
 // #include <utility>
-#include "../extern/nkf/libnkf.hpp"
 #include "ccore.hpp"
 
-// extern "C" PyObject* binopen_py(PyObject* self, PyObject* args, PyObject* kwargs) {
-//     PyObject *o, *ioMod, *openedFile = NULL, *cn, *klass;
-//     const char* mode = "rb";
-//     const char* kwlist[3] = {"o", "mode", NULL};
+extern "C" PyObject* binopen_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject* o;
+    char* mode = (char*)"rb";
+    int buffering = -1;
+    PyObject* encoding = Py_None;
+    PyObject* errors = Py_None;
+    PyObject* newline = Py_None;
+    PyObject* closefd = Py_True;
+    PyObject* _opener = Py_None;
 
-//     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|s", (char**)kwlist, &o, &mode))
-//         return NULL;
+    const char* kwlist[9] = {"o", "mode", "buffering", "errors", "closefd", "opener", NULL};
 
-//     if(PyUnicode_Check(o)) {
-//         ioMod = PyImport_ImportModule("io");
-//         openedFile = PyObject_CallMethod(ioMod, "open", "Os", o, mode);
-//         Py_DECREF(ioMod);
-//         return openedFile;
-//     } else if(PyObject_HasAttrString(o, "joinpath")) {
-//         return PyObject_CallMethod(o, "open", "s", mode);
-//     } else if(PyObject_HasAttrString(o, "_mode")) {
-//         Py_INCREF(o);
-//         return o;
-//     } else if(PyObject_HasAttrString(o, "mode")) {
-//         PyObject* m = PyObject_GetAttrString(o, "mode");
-//         if(m && std::string(PyUnicode_AsUTF8(m)).find('b') != std::string::npos) {
-//             Py_DECREF(m);
-//             Py_INCREF(o);
-//             return o;
-//         }
-//         Py_DECREF(m);
-//     }
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|siOOO", (char**)kwlist, &o, &mode, &buffering, &errors, &closefd,
+                                    &_opener))
+        return NULL;
 
-//     std::string klassname;
+    return binopen(o, mode, buffering, encoding, errors, newline, closefd, _opener);
+}
 
-//     cn = PyObject_GetAttrString(o, "__class__");
-//     klass = PyObject_GetAttrString(cn, "__name__");
-//     PyErr_Clear();
-//     if(klass) {
-//         klassname += PyUnicode_AsUTF8(klass);
-//         if(klassname == "ExFileObject" || klassname == "ZipExtFile") {
-//             Py_DECREF(cn);
-//             Py_DECREF(klass);
-//             Py_INCREF(o);
-//             return o;
-//         }
-//     }
-//     Py_DECREF(cn);
-//     Py_DECREF(klass);
+extern "C" PyObject* opener_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject* o;
+    char* mode = (char*)"r";
+    int buffering = -1;
+    char* encoding = NULL;
+    PyObject* errors = Py_None;
+    PyObject* newline = Py_None;
+    PyObject* closefd = Py_True;
+    PyObject* _opener = Py_None;
 
-//     if(klassname[0] == 'B' &&
-//        (klassname == "BytesIO" || klassname == "BufferedReader" || klassname == "BufferedRWPair")) {
-//         Py_INCREF(o);
-//         return o;
-//     }
+    const char* kwlist[9] = {"o", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener", NULL};
 
-//     if(PyObject_HasAttrString(o, "name")) {
-//         PyObject* name = PyObject_GetAttrString(o, "name");
-//         if(name && name != Py_None) {
-//             // PyObject_CallMethod(o, "close", NULL);
-//             ioMod = PyImport_ImportModule("io");
-//             openedFile = PyObject_CallMethod(ioMod, "open", "Os", name, mode);
-//             Py_DECREF(ioMod);
-//             Py_DECREF(name);
-//             Py_XINCREF(openedFile);
-//             return openedFile;
-//         }
-//         Py_XDECREF(name);
-//     }
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|sisOOOO", (char**)kwlist, &o, &mode, &buffering, &encoding,
+                                    &errors, &newline, &closefd, &_opener))
+        return NULL;
 
-//     if(klassname == "StringIO" || klassname == "TextIOWrapper") {
-//         PyObject* encoding = PyObject_GetAttrString(o, "encoding");
-//         PyObject* cb = PyObject_CallMethod(o, "getvalue", NULL);
-//         PyObject* bio;
-//         if(encoding && encoding != Py_None) {
-//             bio = PyObject_CallMethod(cb ? cb : o, "encode", "O", encoding);
-//         } else {
-//             bio = PyObject_CallMethod(cb ? cb : o, "encode", NULL);
-//         }
-//         Py_XDECREF(encoding);
-//         Py_XDECREF(cb);
-//         if(bio == NULL)
-//             return NULL;
-//         ioMod = PyImport_ImportModule("io");
-//         openedFile = PyObject_CallMethod(ioMod, "BytesIO", "O", bio);
-//         if(PyObject_HasAttrString(o, "name")) {
-//             PyObject_SetAttrString(openedFile, "name", PyObject_GetAttrString(o, "name"));
-//         } else {
-//             Py_INCREF(Py_None);
-//             PyObject_SetAttrString(openedFile, "name", Py_None);
-//         }
-//         Py_DECREF(bio);
-//         Py_DECREF(ioMod);
-//         Py_XINCREF(openedFile);
-//         return openedFile;
-//     }
+    return opener(o, mode, buffering, encoding, errors, newline, closefd, _opener);
+}
 
-//     if(PyBytes_Check(o) || PyByteArray_Check(o)) {
-//         ioMod = PyImport_ImportModule("io");
-//         openedFile = PyObject_CallMethod(ioMod, "BytesIO", "O", o);
-//         Py_DECREF(ioMod);
-//         Py_INCREF(Py_None);
-//         PyObject_SetAttrString(openedFile, "name", Py_None);
-//         Py_XINCREF(openedFile);
-//         return openedFile;
-//     }
+extern "C" PyObject* headtail_py(PyObject* self, PyObject* args) {
+    PyObject *o, *ret;
+    Py_ssize_t bufsize;
 
-//     return PyErr_Format(PyExc_ValueError, "Unknown Object %s. filename or filepointer buffer", klassname.data());
-// }
+    if(!PyArg_ParseTuple(args, "On", &o, &bufsize))
+        return NULL;
+
+    if(bufsize < 0)
+        return PyErr_Format(PyExc_ValueError, "`bufsize` argument : Negative values are invalid.");
+
+    if((ret = headtail(o, bufsize)) != NULL)
+        return ret;
+    Py_RETURN_NONE;
+}
+
+extern "C" PyObject* guesstype_py(PyObject* self, PyObject* args) {
+    PyObject* o;
+    Py_ssize_t bufsize = 2048;
+
+    if(!PyArg_ParseTuple(args, "O|n", &o, &bufsize))
+        return NULL;
+
+    if(bufsize < 0)
+        return PyErr_Format(PyExc_ValueError, "`bufsize` argument : Negative values are invalid.");
+
+    const char* ret = guesstype(o, bufsize);
+    if(PyErr_Occurred())
+        return NULL;
+    if(ret == NULL)
+        Py_RETURN_NONE;
+    return PyUnicode_FromString(ret);
+}
+
+const char* _getsniffargs(PyObject* o, const char* default_value, std::size_t default_value_len, Py_ssize_t* len) {
+    const char* carg = NULL;
+    if(o == NULL) {
+        carg = default_value;
+        *len = default_value_len;
+    } else if(PyUnicode_Check(o)) {
+        carg = PyUnicode_AsUTF8AndSize(o, len);
+    } else if(PyBytes_Check(o)) {
+        carg = PyBytes_AsString(o);
+        *len = PyBytes_GET_SIZE(o);
+    } else {
+        PyObject *res = NULL, *sep1 = NULL, *tmp = NULL;
+        if(!PySequence_Check(o)) {
+            if((tmp = PySequence_List(o)) == NULL)
+                return NULL;
+        }
+        if(!PySequence_Check(tmp ? tmp : o))
+            return NULL;
+        if((sep1 = PyUnicode_FromString("")) == NULL)
+            return NULL;
+        res = PyUnicode_Join(sep1, tmp ? tmp : o);
+        Py_DECREF(sep1);
+        Py_XDECREF(tmp);
+        if(res) {
+            carg = PyUnicode_AsUTF8AndSize(res, len);
+            Py_DECREF(res);
+        } else {
+            PyObject* sep2 = PyBytes_FromString("");
+            res = _PyBytes_Join(sep2, o);
+            Py_DECREF(sep2);
+            if(res) {
+                carg = PyBytes_AsString(res);
+                *len = PyBytes_GET_SIZE(res);
+                Py_DECREF(res);
+            } else {
+                return NULL;
+            }
+        }
+    }
+    if(carg == NULL || *len == -1) {
+        PyErr_Format(PyExc_TypeError, "Unknown type of Option arguments. Please sequencial object.");
+        carg = NULL;
+        *len = -1;
+    }
+    return carg;
+}
+
+extern "C" PyObject* sniffer_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject *o, *DL = NULL, *QU = NULL, *ES = NULL, *LN = NULL;
+    int maxlines = 100, with_encoding = false;
+    const char *delimiters, *quotechars, *escapechars, *lineterminators;
+    Py_ssize_t len, len_delims, len_quotes, len_escapes, len_lineterms;
+    const char* dat = NULL;
+
+    const char* kwlist[] = {"o",          "maxlines",    "with_encoding",   "delimiters",
+                            "quotechars", "escapechars", "lineterminators", NULL};
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|iiOOOO", (char**)kwlist, &o, &maxlines, &with_encoding, &DL, &QU,
+                                    &ES, &LN))
+        return NULL;
+    
+    if(o == Py_None)
+        return PyErr_Format(PyExc_TypeError, "Nonetype is not iteratable.");
+
+    if((delimiters = _getsniffargs(DL, ",\t;:| ", 6, &len_delims)) == NULL)
+        return NULL;
+
+    if((quotechars = _getsniffargs(QU, "\"'`", 3, &len_quotes)) == NULL)
+        return NULL;
+
+    if((escapechars = _getsniffargs(ES, R"(\\^)", 2, &len_escapes)) == NULL)
+        return NULL;
+
+    if((lineterminators = _getsniffargs(LN, "\r\n", 2, &len_lineterms)) == NULL)
+        return NULL;
+
+    if(PyUnicode_Check(o) && (dat = PyUnicode_AsUTF8AndSize(o, &len)) == NULL)
+        return NULL;
+
+    if(PyBytes_Check(o) && ((dat = PyBytes_AsString(o)) == NULL || (len = PyBytes_GET_SIZE(o)) == -1))
+        return NULL;
+
+    if(PyByteArray_Check(o) && ((dat = PyByteArray_AsString(o)) == NULL || (len = PyByteArray_GET_SIZE(o)) == -1))
+        return NULL;
+    
+    return sniffer(dat, len, maxlines, with_encoding, delimiters, len_delims, quotechars, len_quotes, escapechars,
+                   len_escapes, lineterminators, len_lineterms);
+}
 
 extern "C" PyObject* guess_encoding_py(PyObject* self, PyObject* args) {
     PyObject* o;
+    int strict = false;
     unsigned char* str;
     int strlen;
 
-    if(!PyArg_ParseTuple(args, "O", &o))
+    if(!PyArg_ParseTuple(args, "Oi", &o, &strict))
         return NULL;
 
     if(PyBytes_Check(o)) {
@@ -130,12 +185,11 @@ extern "C" PyObject* guess_encoding_py(PyObject* self, PyObject* args) {
         return PyErr_Format(PyExc_ValueError, "only bytes or unicode.");
     }
 
-    const char* ret = guess_encoding(str, strlen);
+    const char* ret = guess_encoding(str, strlen, (bool)strict);
     if(ret)
         return PyUnicode_FromString(ret);
     Py_RETURN_NONE;
 }
-
 extern "C" PyObject* flatten_py(PyObject* self, PyObject* args) {
     PyObject *iterable, *mapping;
     if(!PyArg_UnpackTuple(args, "_count_elements", 1, 1, &iterable))
@@ -154,7 +208,7 @@ extern "C" PyObject* flatten_py(PyObject* self, PyObject* args) {
 }
 
 extern "C" PyObject* which_py(PyObject* self, PyObject* args) {
-    PyObject *o;
+    PyObject* o;
 
     if(!PyArg_ParseTuple(args, "O", &o))
         return NULL;
@@ -168,14 +222,13 @@ extern "C" PyObject* which_py(PyObject* self, PyObject* args) {
 
     if(which(c, len, res))
         return PyUnicode_FromWideChar(res, -1);
-    
-    Py_RETURN_NONE;
 
+    Py_RETURN_NONE;
 }
 
 extern "C" PyObject* Counter_py(PyObject* self, PyObject* args, PyObject* kwargs) {
     PyObject *iterable, *res;
-    PyObject *keyfunc = NULL;
+    PyObject* keyfunc = NULL;
 
     const char* kwlist[3] = {"iterable", "keyfunc", NULL};
 
@@ -184,7 +237,7 @@ extern "C" PyObject* Counter_py(PyObject* self, PyObject* args, PyObject* kwargs
 
     if(iterable == Py_None)
         PyErr_Format(PyExc_TypeError, "missing required argument 'iteraable' (pos 1)");
-    
+
     if(keyfunc && !PyCallable_Check(keyfunc))
         PyErr_Format(PyExc_TypeError, "keyfunc required callable");
 
@@ -207,7 +260,7 @@ extern "C" PyObject* Grouper_py(PyObject* self, PyObject* args, PyObject* kwargs
 
     if(iterable == Py_None)
         PyErr_Format(PyExc_TypeError, "missing required argument 'iteraable' (pos 1)");
-    
+
     if(keyfunc && !PyCallable_Check(keyfunc))
         PyErr_Format(PyExc_TypeError, "keyfunc required callable");
 
@@ -216,10 +269,26 @@ extern "C" PyObject* Grouper_py(PyObject* self, PyObject* args, PyObject* kwargs
 
     if((res = PyDict_New()) == NULL)
         return NULL;
-    
-    if (Grouper(res, iterable, keyfunc, valfunc))
+
+    if(Grouper(res, iterable, keyfunc, valfunc))
         return res;
     return NULL;
+}
+
+extern "C" PyObject* uniq_py(PyObject* self, PyObject* args, PyObject* kwargs) {
+    PyObject* iterable;
+    PyObject* keyfunc = NULL;
+    int select_first = 1;
+
+    const char* kwlist[4] = {"iterable", "keyfunc", "select_first", NULL};
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oi", (char**)kwlist, &iterable, &keyfunc, &select_first))
+        return NULL;
+
+    if(iterable == Py_None)
+        PyErr_Format(PyExc_TypeError, "missing required argument 'iteraable' (pos 1)");
+
+    return uniq(iterable, keyfunc == Py_None ? NULL : keyfunc, (bool)select_first);
 }
 
 extern "C" PyObject* listify_py(PyObject* self, PyObject* args) {
@@ -257,7 +326,7 @@ extern "C" PyObject* to_hankaku_py(PyObject* self, PyObject* args) {
 
     unsigned int kind = PyUnicode_KIND(str);
     Py_ssize_t len;
-    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len); //@todo bytes against
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);  //@todo bytes against
     if(wdat == NULL)
         return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0 || kind == 1)
@@ -280,7 +349,7 @@ extern "C" PyObject* to_zenkaku_py(PyObject* self, PyObject* args) {
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
 
     Py_ssize_t len;
-    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len); //@todo bytes against
+    wchar_t* wdat = PyUnicode_AsWideCharString(str, &len);  //@todo bytes against
     if(wdat == NULL)
         return PyErr_Format(PyExc_MemoryError, "Unknow Error.");
     if(len == 0)
@@ -560,7 +629,7 @@ extern "C" PyObject* extractdate_py(PyObject* self, PyObject* args, PyObject* kw
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL) //@todo bytes against
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)  //@todo bytes against
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     res = extractdate(str, (bool)dayfirst, minlimit);
@@ -588,13 +657,13 @@ extern "C" PyObject* normalized_datetime_py(PyObject* self, PyObject* args, PyOb
     if(!PyUnicode_Check(o))
         return PyErr_Format(PyExc_ValueError, "Need unicode string data.");
     Py_ssize_t len;
-    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL) //@todo bytes against
+    if((str = PyUnicode_AsWideCharString(o, &len)) == NULL)  //@todo bytes against
         return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
 
     if(format) {
         if(!PyUnicode_Check(format))
             return PyErr_Format(PyExc_ValueError, "Need strftime formating unicode string.");
-        if((fmt = PyUnicode_AsWideCharString(format, &len)) == NULL) //@todo bytes against
+        if((fmt = PyUnicode_AsWideCharString(format, &len)) == NULL)  //@todo bytes against
             return PyErr_Format(PyExc_UnicodeError, "Cannot converting Unicode Data.");
     }
 
@@ -747,6 +816,33 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
     return Py_BuildValue("[OO]", head, tail);
 }
 
+extern "C" PyObject* mklink_py(PyObject* self, PyObject* args) {
+    PyObject* o;
+    PyObject* srcpath;
+    PyObject* targetpath;
+    unsigned char* str;
+    Py_ssize_t srclen;
+    Py_ssize_t tarlen;
+
+#if IS_WIN
+    if(!PyArg_ParseTuple(args, "Ouu", &o, &srcpath, &targetpath))
+        return NULL;
+
+    wchar_t* src = PyUnicode_AsWideCharString(srcpath, &srclen);
+    wchar_t* tar = PyUnicode_AsWideCharString(targetpath, &tarlen);
+#else
+    if(!PyArg_ParseTuple(args, "OUU", &o, &srcpath, &targetpath))
+        return NULL;
+
+    const char* src = PyUnicode_AS_DATA(srcpath);
+    const char* tar = PyUnicode_AS_DATA(targetpath);
+#endif
+    if(mklink(src, tar))
+        return NULL;
+    Py_INCREF(targetpath);
+    return targetpath;
+}
+
 #define MODULE_NAME _ccore
 #define MODULE_NAME_S "_ccore"
 
@@ -754,11 +850,17 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
 // this module description
 #define MODULE_DOCS "hevy use function faster function by CAPI Python implementation.\n"
 
+#define binopen_DESC "always binary mode open.\n"
+#define opener_DESC "always text mode open.\n"
+#define headtail_DESC "header and tail binary data.\n"
+#define guesstype_DESC "guess filetype from binary data.\n"
+#define sniffer_DESC "csv delimiter guess define from data.\n"
 #define getencoding_DESC "guess encoding from binary data.\n"
 #define flatten_DESC "Always return 1D array(flatt list) object\n"
 #define which_DESC "like GNU which function\n"
 #define Counter_DESC "C implement Counter function\nDict Object return."
 #define Grouper_DESC "C implement like groupby function\nDict Object return."
+#define uniq_DESC "iterable data to uniq list."
 #define listify_DESC "Always return list object.\n"
 #define to_hankaku_DESC "from zenkaku data to hankaku data.\n"
 #define to_zenkaku_DESC "from hankaku data to zenkaku data.\n"
@@ -782,23 +884,40 @@ extern "C" PyObject* iterheadtail_py(PyObject* self, PyObject* args, PyObject* k
 #define iterhead_DESC "get head data\n"
 #define itertail_DESC "get tail data\n"
 #define iterheadtail_DESC "get head & tail data\n"
+#define mklink_DESC "link maker for windows.\n"
 
 /* }}} */
 #define PY_ADD_METHOD(py_func, c_func, desc) \
     { py_func, (PyCFunction)c_func, METH_VARARGS, desc }
 #define PY_ADD_METHOD_KWARGS(py_func, c_func, desc) \
     { py_func, (PyCFunction)c_func, METH_VARARGS | METH_KEYWORDS, desc }
+#define PY_ADD_CLASS(klasstype)                                                   \
+    do {                                                                          \
+        if(PyType_Ready(klasstype) < 0)                                           \
+            return NULL;                                                          \
+        Py_INCREF(klasstype);                                                     \
+        if(PyModule_AddObject(m, *klasstype.tp_name, (PyObject*)klasstype) < 0) { \
+            Py_XDECREF(klasstype);                                                \
+            goto error;                                                           \
+        }                                                                         \
+    } while(0)
 
 /* Please extern method define for python */
 /* PyMethodDef Parameter Help
  * https://docs.python.org/ja/3/c-api/structures.html#c.PyMethodDef
  */
 static PyMethodDef py_methods[] = {
+    PY_ADD_METHOD_KWARGS("binopen", binopen_py, binopen_DESC),
+    PY_ADD_METHOD_KWARGS("opener", opener_py, opener_DESC),
+    PY_ADD_METHOD("headtail", headtail_py, headtail_DESC),
+    PY_ADD_METHOD("guesstype", guesstype_py, guesstype_DESC),
+    PY_ADD_METHOD_KWARGS("sniffer", sniffer_py, sniffer_DESC),
     PY_ADD_METHOD("getencoding", guess_encoding_py, getencoding_DESC),
     PY_ADD_METHOD("flatten", flatten_py, flatten_DESC),
     PY_ADD_METHOD("which", which_py, which_DESC),
     PY_ADD_METHOD_KWARGS("Counter", Counter_py, Counter_DESC),
     PY_ADD_METHOD_KWARGS("Grouper", Grouper_py, Grouper_DESC),
+    PY_ADD_METHOD_KWARGS("uniq", uniq_py, uniq_DESC),
     PY_ADD_METHOD("listify", listify_py, listify_DESC),
     PY_ADD_METHOD("to_hankaku", to_hankaku_py, to_hankaku_DESC),
     PY_ADD_METHOD("to_zenkaku", to_zenkaku_py, to_zenkaku_DESC),
@@ -822,15 +941,25 @@ static PyMethodDef py_methods[] = {
     PY_ADD_METHOD_KWARGS("iterhead", iterhead_py, iterhead_DESC),
     PY_ADD_METHOD_KWARGS("itertail", itertail_py, itertail_DESC),
     PY_ADD_METHOD_KWARGS("iterheadtail", iterheadtail_py, iterheadtail_DESC),
+    PY_ADD_METHOD("mklink", mklink_py, mklink_DESC),
     {NULL, NULL, 0, NULL}};
+
+#include "../resource/g2d.const"
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef py_defmod = {PyModuleDef_HEAD_INIT, MODULE_NAME_S, MODULE_DOCS, 0, py_methods};
 #define PARSE_NAME(mn) PyInit_##mn
-#define PARSE_FUNC(mn)                      \
-    PyMODINIT_FUNC PARSE_NAME(mn)() {       \
-        PyDateTime_IMPORT;                  \
-        return PyModule_Create(&py_defmod); \
+#define PARSE_FUNC(mn)                             \
+    PyMODINIT_FUNC PARSE_NAME(mn)() {              \
+        PyDateTime_IMPORT;                         \
+        PyObject* m = PyModule_Create(&py_defmod); \
+        if(m == NULL)                              \
+            return NULL;                           \
+        APPEND_MODULE;                             \
+        return m;                                  \
+    error:                                         \
+        Py_DECREF(m);                              \
+        return NULL;                               \
     }
 
 #else

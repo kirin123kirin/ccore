@@ -1,0 +1,25 @@
+record //hoge
+  string(7) foo1;
+  string(9) foo2;
+  record
+    ebicdic string(9) foo3;
+    record
+      string(7) booon;
+      record
+        record
+          string hcol;
+        end H4;
+      end H3;
+    end H2;
+  end bar1;
+  record
+    record
+      string(7) baan;
+      record
+        record
+          string hcol;
+        end h4;
+      end h3;
+    end boke;
+  end bar2;
+end

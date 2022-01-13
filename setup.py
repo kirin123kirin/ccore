@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
 import re
@@ -25,8 +25,8 @@ cmake_args = {
     "common": [
     ],
     "windows": [
-        "-DCMAKE_C_COMPILER=clang",
-        "-DCMAKE_CXX_COMPILER=clang++",
+        # "-DCMAKE_C_COMPILER=clang",
+        # "-DCMAKE_CXX_COMPILER=clang++",
     ],
     "linux": [
     ],

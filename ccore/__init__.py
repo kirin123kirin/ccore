@@ -1,28 +1,57 @@
-from ._ccore import getencoding  # noqa: F401
-from ._ccore import flatten  # noqa: F401
-from ._ccore import which  # noqa: F401
-from ._ccore import Counter  # noqa: F401
-from ._ccore import Grouper  # noqa: F401
-from ._ccore import listify  # noqa: F401
-from ._ccore import to_hankaku  # noqa: F401
-from ._ccore import to_zenkaku  # noqa: F401
-from ._ccore import kanji2int  # noqa: F401
-from ._ccore import int2kanji  # noqa: F401
-from ._ccore import lookuptype  # noqa: F401
-from ._ccore import is_tar  # noqa: F401
-from ._ccore import is_lha  # noqa: F401
-from ._ccore import is_office  # noqa: F401
-from ._ccore import is_xls  # noqa: F401
-from ._ccore import is_doc  # noqa: F401
-from ._ccore import is_ppt  # noqa: F401
-from ._ccore import is_xml  # noqa: F401
-from ._ccore import is_html  # noqa: F401
-from ._ccore import is_json  # noqa: F401
-from ._ccore import is_dml  # noqa: F401
-from ._ccore import is_csv  # noqa: F401
-from ._ccore import to_datetime  # noqa: F401
-from ._ccore import extractdate  # noqa: F401
-from ._ccore import normalized_datetime  # noqa: F401
-from ._ccore import iterhead  # noqa: F401
-from ._ccore import itertail  # noqa: F401
-from ._ccore import iterheadtail  # noqa: F401
+# -*- coding: utf-8 -*-
+from ._ccore import (
+    getencoding,
+    binopen,
+    opener,
+    headtail,
+    guesstype,
+    sniffer,
+    flatten,
+    which,
+    Counter,
+    Grouper,
+    uniq,
+    listify,
+    to_hankaku,
+    to_zenkaku,
+    kanji2int,
+    int2kanji,
+    lookuptype,
+    is_tar,
+    is_lha,
+    is_office,
+    is_xls,
+    is_doc,
+    is_ppt,
+    is_xml,
+    is_html,
+    is_json,
+    is_dml,
+    is_csv,
+    g2d,
+    to_datetime,
+    extractdate,
+    normalized_datetime,
+    iterhead,
+    itertail,
+    iterheadtail,
+    mklink,
+)
+
+
+from typing import Union, Iterable, Any
+
+def example(o: Union[bytes, bytearray, str],
+            hoeg: int,
+            foo: bool = False
+            ) -> dict:
+    """
+    # This is Markdown OK
+    """
+
+# def sniffer(o: Union[bytes, bytearray, str],
+#             maxlines: int,
+#             with_encoding: bool = False
+#             ) -> dict:
+#     """
+#     """

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+
 from glob import glob
 from timeit import timeit
 from psutil import Process
@@ -38,22 +39,21 @@ except ImportError:
         from ccore._ccore import *
         kw = {"setup": "from ccore._ccore import *"} if PY2 else {}
 
-
-from socket import gethostname
-__tdpath = "/portable.app/usr/share/testdata/"
-if gethostname() == "localhost":
-    tdir = "/storage/emulated/0/Android/data/com.dropbox.android/files/u9335201/scratch" + __tdpath
-elif os.name == "posix":
-    tdir = os.getenv("HOME") + "/Dropbox/" + __tdpath
-else:
-    tdir = "Y:/usr/share/testdata/"
-
+from io import BytesIO, StringIO
+from zipfile import ZipFile, ZipExtFile
+from pathlib import Path
+import bz2
+import gzip
+import lzma
+import tarfile
+from io import TextIOWrapper, BufferedReader
+from data import tdir, TMPDIR
 
 process = Process(os.getpid())
 def memusage():
     return process.memory_info()[0] / 1024
 
-def runtimeit(funcstr, number=10000):
+def runtimeit(funcstr, number=1000):
     i = 0
     kw["number"] = number
     if sys.version_info[0] >= 3:
@@ -68,10 +68,458 @@ def runtimeit(funcstr, number=10000):
         p = timeit(fc, **kw)
 
         am = (memusage() - bm)
-        assert am < 10000, "{} function {}KB Memory Leak Error".format(fc, am)
+        assert am < 1000, "{} function {}KB Memory Leak Error".format(fc, am)
         print("{}: {} ns (mem after {}KB)".format(fc, int(1000000000 * p / number), am))
         i += 1
 
+def test_binopen_normal():
+    global f, z
+    import http.client
+    import urllib.request
+    with binopen(tdir + "/test.html", "rb") as f:
+        isinstance(f, BufferedReader)
+    runtimeit('binopen(tdir + "/test.html", "rb")')
+
+    with open(tdir + "/test.html", "rb") as f:
+        assert binopen(f) == f
+        runtimeit("binopen(f)")
+
+    with open(tdir + "/test.html", "rb") as f:
+        fr = binopen(f.fileno())
+        assert isinstance(fr, BufferedReader)
+
+    f = open(tdir + "/test.html", "r")
+    fr = binopen(f)
+    assert isinstance(fr, BufferedReader)
+    runtimeit('binopen(f)')
+    fr.close()
+
+    with open(tdir + "/test.html") as f:
+        fr = binopen(f)
+        isinstance(fr, BufferedReader)
+        runtimeit("binopen(f)")
+
+    with binopen(Path(tdir + "/test.html")) as f:
+        assert isinstance(f, BufferedReader)
+        runtimeit("binopen(f)")
+
+    with BytesIO(b"test") as f:
+        try: f.name
+        except AttributeError: pass
+        assert binopen(f) == f
+        assert f.name == None
+        runtimeit("binopen(f)")
+
+    with StringIO("test") as f:
+        bio = binopen(f)
+        isinstance(bio, BytesIO)
+        try: f.name
+        except AttributeError: pass
+        bio.name == None
+        runtimeit("binopen(f)")
+
+    with bz2.open(tdir + "/test.csv.bz2") as f:
+        assert isinstance(binopen(f), bz2.BZ2File)
+        runtimeit("binopen(f)")
+
+    with gzip.open(tdir + "/test.csv.gz") as f:
+        assert isinstance(binopen(f), gzip.GzipFile)
+        runtimeit("binopen(f)")
+
+    with lzma.open(tdir + "/test.csv.xz") as f:
+        assert isinstance(binopen(f), lzma.LZMAFile)
+        runtimeit("binopen(f)")
+
+    with ZipFile(tdir + "/test.zip") as f:
+        z = f.open(f.infolist()[0])
+        assert isinstance(binopen(z), ZipExtFile)
+        runtimeit("binopen(z)")
+
+    with tarfile.open(tdir + "/test.tar") as f:
+        n = f.getmembers()[0].name
+        z = f.extractfile(n)
+        assert isinstance(binopen(z), tarfile.ExFileObject)
+        runtimeit("binopen(z)")
+
+    with urllib.request.urlopen("https://www.google.com") as res:
+        assert isinstance(binopen(res), http.client.HTTPResponse)
+
+    with binopen("abc" * 1024) as f:
+        assert isinstance(f, BytesIO)
+        assert f.getvalue() == b"abc" * 1024
+
+    with binopen(b"abc" * 1024) as f:
+        assert isinstance(f, BytesIO)
+        assert f.getvalue() == b"abc" * 1024
+
+    with binopen("https://www.google.com") as res:
+        assert isinstance(binopen(res), http.client.HTTPResponse)
+
+
+def test_binopen_thirdparty_opener():
+    global z, dat
+    try:
+        from rarfile import RarFile, DirectReader
+        with RarFile(tdir + "/test.rar") as f:
+            n = f.infolist()[0]
+            z = f.open(n)
+            assert isinstance(binopen(z), DirectReader)
+            runtimeit("binopen(z)")
+            z.close()
+    except ImportError:
+        pass
+
+    try:
+        from lhafile import LhaFile
+        with open(tdir + "/test.lzh", "rb") as fp:
+            f = LhaFile(fp)
+            info = f.namelist()[0]
+            dat = f.read(info)
+            assert isinstance(binopen(dat), BytesIO)
+            runtimeit("binopen(dat)")
+    except ImportError:
+        pass
+
+def test_binopen_iragular():
+    try:binopen(tdir + "nothing.txt")
+    except FileNotFoundError: pass
+    try : binopen(None)
+    except ValueError: pass
+    try : binopen(1.01)
+    except ValueError: pass
+    try : binopen()
+    except TypeError: pass
+    try : binopen([tdir + "/test.html"])
+    except ValueError: pass
+    try : binopen([])
+    except ValueError: pass
+    try : binopen(())
+    except ValueError: pass
+
+def test_opener_regular():
+    import urllib.request
+    import http.client
+    global f, z
+    with opener(tdir + "/test.html", "r") as f:
+        isinstance(f, TextIOWrapper)
+    runtimeit('opener(tdir + "/test.html", "r")')
+
+    with open(tdir + "/test.html", "r") as f:
+        assert opener(f) == f
+        runtimeit("opener(f)")
+
+    with open(tdir + "/test.html", "r") as f:
+        fd = f.fileno()
+        fr = opener(fd)
+        assert isinstance(fr, TextIOWrapper)
+    del fr
+
+    with open(tdir + "/test.html", "rb") as f:
+        fr = opener(f)
+        assert isinstance(fr, TextIOWrapper)
+        runtimeit('opener(f)')
+    del fr
+
+    with open(tdir + "/test.html") as f:
+        fr = opener(f)
+        isinstance(fr, TextIOWrapper)
+        runtimeit("opener(f)")
+
+    with opener(Path(tdir + "/test.html")) as f:
+        assert isinstance(f, TextIOWrapper)
+        runtimeit("opener(f)")
+
+    with StringIO("test") as f:
+        try: f.name
+        except AttributeError: pass
+        assert opener(f) == f
+        assert f.name == None
+        runtimeit("opener(f)")
+
+    with BytesIO(b"test") as f:
+        sio = opener(f)
+        isinstance(sio, StringIO)
+        try: f.name
+        except AttributeError: pass
+        assert sio.name == None
+        runtimeit("opener(f)")
+
+    with bz2.open(tdir + "/test.csv.bz2") as f:
+        assert isinstance(opener(f), bz2.BZ2File)
+        runtimeit("opener(f)")
+
+    with gzip.open(tdir + "/test.csv.gz") as f:
+        assert isinstance(opener(f), gzip.GzipFile)
+        runtimeit("opener(f)")
+
+    with lzma.open(tdir + "/test.csv.xz") as f:
+        assert isinstance(opener(f), lzma.LZMAFile)
+        runtimeit("opener(f)")
+
+    with ZipFile(tdir + "/test.zip") as f:
+        z = f.open(f.infolist()[0])
+        assert isinstance(opener(z), ZipExtFile)
+        runtimeit("opener(z)")
+
+    with tarfile.open(tdir + "/test.tar") as f:
+        n = f.getmembers()[0].name
+        z = f.extractfile(n)
+        assert isinstance(opener(z), tarfile.ExFileObject)
+        runtimeit("opener(z)")
+
+    with urllib.request.urlopen("https://www.google.com") as res:
+        assert isinstance(opener(res), http.client.HTTPResponse)
+
+    with opener("abc" * 1024) as f:
+        assert isinstance(f, StringIO)
+        assert f.getvalue() == "abc" * 1024
+
+    with opener(b"abc" * 1024) as f:
+        assert isinstance(f, StringIO)
+        assert f.getvalue() == "abc" * 1024
+
+    with opener("https://www.google.com") as res:
+        assert isinstance(opener(res), http.client.HTTPResponse)
+
+def test_opener_thirdparty_opener():
+    global z, dat
+    try:
+        from rarfile import RarFile, DirectReader
+        with RarFile(tdir + "/test.rar") as f:
+            n = f.infolist()[0]
+            z = f.open(n)
+            assert isinstance(opener(z), DirectReader)
+            runtimeit("opener(z)")
+            z.close()
+    except ImportError:
+        pass
+
+    try:
+        from lhafile import LhaFile
+        with open(tdir + "/test.lzh", "rb") as fp:
+            f = LhaFile(fp)
+            info = f.namelist()[0]
+            dat = f.read(info)
+            assert isinstance(opener(dat), StringIO)
+            runtimeit("opener(dat)")
+    except ImportError:
+        pass
+
+def test_opener_iragular():
+    try:opener(tdir + "nothing.txt")
+    except FileNotFoundError: pass
+    try : opener(None)
+    except ValueError: pass
+    try : opener(1.01)
+    except ValueError: pass
+    try : opener()
+    except TypeError: pass
+    try : opener([tdir + "/test.html"])
+    except ValueError: pass
+    try : opener([])
+    except ValueError: pass
+    try : opener(())
+    except ValueError: pass
+
+def test_headtail():
+    global f, anser_0, anser_1, anser_5, anser_10, anser_full
+    anser_0    = b''
+    anser_1    = b'n\n'
+    anser_5    = b'n,aa\r,\x82\xa0\r\n'
+    anser_10   = b'n,aa\r\n1,\r\n2,\x82\xa0\r\n'
+    anser_full = b'n,aa\r\n1,1\r\n2,\x82\xa0\r\n'
+
+    assert(headtail(anser_full, 10) == anser_full)
+    assert(headtail(anser_full, 17) == anser_full)
+    assert(headtail(anser_full, 18) == anser_full)
+    assert(headtail(anser_full, 5) == anser_5)
+    assert(headtail(anser_full, 1) == anser_1)
+    assert(headtail(anser_full, 0) == anser_0)
+    try: headtail(anser_full, -1)
+    except ValueError: pass
+    runtimeit("headtail(anser_full, 10)")
+    runtimeit("headtail(anser_full, 17)")
+    runtimeit("headtail(anser_full, 5)")
+
+    with open(tdir + "/test.csv", "rb") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with open(tdir + "/test.csv", "r") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with open(tdir + "/test.csv", "rb") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with bz2.open(tdir + "/test.csv.bz2") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with gzip.open(tdir + "/test.csv.gz") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with lzma.open(tdir + "/test.csv.xz") as f:
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with ZipFile(tdir + "/test.zip") as z:
+        f = z.open(z.infolist()[0])
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+    with tarfile.open(tdir + "/test.tar") as z:
+        n = z.getmembers()[0].name
+        f = z.extractfile(n)
+        assert(headtail(f, 10) == anser_full)
+        assert(headtail(f, 17) == anser_full)
+        assert(headtail(f, 18) == anser_full)
+        assert(headtail(f, 5) == anser_5)
+        assert(headtail(f, 1) == anser_1)
+        assert(headtail(f, 0) == anser_0)
+        try: headtail(f, -1)
+        except ValueError: pass
+        runtimeit("headtail(f, 10)")
+        runtimeit("headtail(f, 17)")
+        runtimeit("headtail(f, 5)")
+
+def test_sniffer_byteslike():
+    global dat
+    with open(tdir + "/diff1.csv", "rb") as f:
+        dat = f.read()
+        defaultvalue_anser = {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False}
+        assert(sniffer(dat) == defaultvalue_anser)
+        assert(sniffer(dat, delimiters="\t;:| ") == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=b"\t;:| ") == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=list("\t;:| ")) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=tuple("\t;:| ")) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=["\t;:", "| "]) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, with_encoding=False) == {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, with_encoding=True) == {'encoding': 'CP932', 'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, -1, with_encoding=False) == {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, -1, with_encoding=True) == {'encoding': 'CP932', 'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters="") == defaultvalue_anser)
+        assert(sniffer(dat, delimiters=[]) == defaultvalue_anser)
+        runtimeit("sniffer(dat, with_encoding=False)")
+        runtimeit("sniffer(dat, with_encoding=True)")
+        runtimeit("sniffer(dat, -1, with_encoding=False)")
+        runtimeit("sniffer(dat, -1, with_encoding=True)")
+
+def test_sniffer_str():
+    global dat
+    with open(tdir + "/diff1.csv", encoding="CP932", newline="\r\n") as f:
+        dat = f.read()
+        defaultvalue_anser = {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False}
+        assert(sniffer(dat) == defaultvalue_anser)
+        assert(sniffer(dat, delimiters="\t;:| ") == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=b"\t;:| ") == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=list("\t;:| ")) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=tuple("\t;:| ")) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters=["\t;:", "| "]) == {'delimiter': ' ', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, with_encoding=False) == {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, with_encoding=True) == {'encoding': "UTF-8", 'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, -1, with_encoding=False) == {'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, -1, with_encoding=True) == {'encoding': "UTF-8", 'delimiter': ',', 'doublequote': True, 'escapechar': None, 'lineterminator': '\r\n', 'quotechar': '"', 'quoting': 0, 'skipinitialspace': False, 'strict': False})
+        assert(sniffer(dat, delimiters="") == defaultvalue_anser)
+        assert(sniffer(dat, delimiters=[]) == defaultvalue_anser)
+        runtimeit("sniffer(dat, with_encoding=False)")
+        runtimeit("sniffer(dat, with_encoding=True)")
+        runtimeit("sniffer(dat, -1, with_encoding=False)")
+        runtimeit("sniffer(dat, -1, with_encoding=True)")
+
+def test_sniffer_iregular():
+    try:sniffer()
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer("")
+    except ValueError:pass
+    else: raise AssertionError
+    try:sniffer(b"")
+    except ValueError:pass
+    else: raise AssertionError
+    try:sniffer(123)
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer([0,1,2,3])
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer(None)
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer(dat, delimiters=None)
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer(dat, delimiters=123)
+    except TypeError:pass
+    else: raise AssertionError
+    try:sniffer(dat, delimiters=[0,1,2])
+    except TypeError:pass
+    else: raise AssertionError
 
 def test_flatten():
     assert(flatten([[1, 2], [3, 4], [[5, 6]]]) == [1, 2, 3, 4, 5, 6])
@@ -124,6 +572,32 @@ def test_Grouper_Errorhandle():
     except TypeError: pass
     else: raise AssertionError("Bad Errorhandling")
 
+def test_uniq():
+    global data, data2
+    data = [1,2,2,3,2] * 100
+    assert(uniq(data) == [1,2,3])
+    data2 = [[1,"a"], [1,"b"], [1,"c"], [2,"d"], [3,"e"]]
+    assert(uniq(data2) == data2)
+    assert(uniq(data2, lambda x: x[0]) == [[1, 'a'], [2, 'd'], [3, 'e']])
+    assert(uniq(data2, lambda x: x[0], select_first=False) == [[1, 'c'], [2, 'd'], [3, 'e']])
+    assert(uniq("123") == ["1", "2", "3"])
+    runtimeit('uniq(data)')
+    runtimeit('uniq(data2)')
+
+def test_uniq_Errorhandle():
+    try: uniq()
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+    try: uniq(None)
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+    try: uniq(1)
+    except TypeError: pass
+    else: raise AssertionError("Bad Errorhandling")
+
+
 
 def test_listify():
     assert(listify("1") == ['1'])
@@ -142,7 +616,6 @@ def test_to_zenkaku():
     assert(to_zenkaku(u"\"") == u"＂")
     runtimeit('to_zenkaku(u"1")')
 
-
 def test_lookuptype():
     assert(lookuptype(b"   \x20\xef\xbb\xbf<?xml version>hogejkflkdsfkja;l?>") == "xml")
     assert(lookuptype(b"hoge") == "txt")
@@ -151,11 +624,96 @@ def test_lookuptype():
     runtimeit('lookuptype(b"hoge")')
     runtimeit("lookuptype(b'PK\\x03\\x04dsfal\\x00')")
 
+def _test_guesstype_auto_assertion(fn, expected = None):
+    global f, anser
+    anser = expected or fn.split(".")[-1].lower()
+
+    print(f"guesstype Runtest start #### {fn} ####")
+
+    with open(fn, "rb") as f:
+        assert(guesstype(f) == anser)
+        assert(guesstype(f.read()) == anser)
+        f.seek(0)
+        assert(guesstype(f.name) == anser)
+        runtimeit("guesstype(f) == anser")
+        runtimeit("guesstype(f.read()) == anser")
+        runtimeit("guesstype(f.name) == anser")
+    
+    f = Path(fn)
+    assert(guesstype(f) == anser)
+    runtimeit("guesstype(f) == anser")
+
 def test_guesstype():
-    for g in glob(tdir + "*"):
-        basename = os.path.basename(g)
-        with open(g, "rb") as f:
-            print(basename, lookuptype(f.read(256)))
+    _test_guesstype_auto_assertion(tdir + "/diff1.csv")
+    _test_guesstype_auto_assertion(tdir + "/diff1.xlsx")
+    _test_guesstype_auto_assertion(tdir + "/iostat.log", "txt")
+    _test_guesstype_auto_assertion(tdir + "/mpstat.log", "txt")
+    _test_guesstype_auto_assertion(tdir + "/sa06", "sarbin")
+    _test_guesstype_auto_assertion(tdir + "/sample.accdb")
+    _test_guesstype_auto_assertion(tdir + "/sample.mdb")
+    _test_guesstype_auto_assertion(tdir + "/sample.sqlite3")
+    _test_guesstype_auto_assertion(tdir + "/sar.dat", "sarbin")
+    _test_guesstype_auto_assertion(tdir + "/test.csv")
+    _test_guesstype_auto_assertion(tdir + "/test.csv.bz2")
+    _test_guesstype_auto_assertion(tdir + "/test.csv.gz")
+    _test_guesstype_auto_assertion(tdir + "/test.csv.tar")
+    _test_guesstype_auto_assertion(tdir + "/test.csv.tar.gz")
+    _test_guesstype_auto_assertion(tdir + "/test.csv.xz")
+    _test_guesstype_auto_assertion(tdir + "/test.dml")
+    _test_guesstype_auto_assertion(tdir + "/test.doc")
+    _test_guesstype_auto_assertion(tdir + "/test.docx")
+    _test_guesstype_auto_assertion(tdir + "/test.hdf")
+    _test_guesstype_auto_assertion(tdir + "/test.html")
+    _test_guesstype_auto_assertion(tdir + "/test.ini", "txt")
+    _test_guesstype_auto_assertion(tdir + "/test.json")
+    _test_guesstype_auto_assertion(tdir + "/test.lzh", "lha")
+    _test_guesstype_auto_assertion(tdir + "/test.md", "txt")
+    _test_guesstype_auto_assertion(tdir + "/test.pcap")
+    _test_guesstype_auto_assertion(tdir + "/test.pdf")
+    _test_guesstype_auto_assertion(tdir + "/test.ppt")
+    _test_guesstype_auto_assertion(tdir + "/test.pptx")
+    _test_guesstype_auto_assertion(tdir + "/test.rar")
+    _test_guesstype_auto_assertion(tdir + "/test.tsv", "csv")
+    _test_guesstype_auto_assertion(tdir + "/test.xls")
+    _test_guesstype_auto_assertion(tdir + "/test.xml")
+    _test_guesstype_auto_assertion(tdir + "/test.zip")
+    _test_guesstype_auto_assertion(tdir + "/test_utf8.csv")
+    _test_guesstype_auto_assertion(tdir + "/vmstat.log", "txt")
+    _test_guesstype_auto_assertion(tdir + "/zabbix_template.xml")
+    _test_guesstype_auto_assertion(tdir + "/zero.txt", "ZERO")
+    assert(guesstype("http://www.example.com") == "html")
+    assert(guesstype("https://www.example.com") == "html")
+    assert(guesstype(b"") == "ZERO")
+
+def test_guesstype_iregular_common():
+    print("guesstype iregurar test Nothing##")
+    try: guesstype("NothingFilepath")
+    except FileNotFoundError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test None##")
+    try: guesstype(None)
+    except ValueError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test int##")
+    try: guesstype(1)
+    except OSError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test float##")
+    try: guesstype(1.1)
+    except ValueError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test list##")
+    try: guesstype([1])
+    except ValueError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test tuple##")
+    try: guesstype((1,2))
+    except ValueError: pass
+    else: raise AssertionError
+    print("guesstype iregurar test empty##")
+    try: guesstype()
+    except TypeError: pass
+    else: raise AssertionError
 
 def test_kanji2int():
     assert(kanji2int(u"一億２千") == "100002000")
